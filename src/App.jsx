@@ -7,7 +7,8 @@ import {
   Flame, Check, Inbox, Rocket, Trash2, X, Info,
   FileText, Clock, PlayCircle, Hash, Edit2,
   TrendingUp, CalendarDays, ChevronDown, Folder, 
-  File, Paperclip, MoreVertical, LayoutGrid, Quote, Timer,
+  File, Paperclip, MoreVertical, LayoutGrid, Quote, Timer, ShoppingBag,
+  Calculator,
   Link as LinkIcon, ExternalLink, Save, BookOpen, GraduationCap,
   Video, Share2, FileSpreadsheet, Search as SearchIcon,
   Clapperboard, FileType, AlertTriangle, TrendingDown, DollarSign, PiggyBank, ArrowUpRight, ArrowDownRight, Settings,
@@ -230,7 +231,7 @@ export default function App() {
   const [habits, setHabits] = useState([]);
 
   // --- Estado de Finanzas ---
-  const [financeTab, setFinanceTab] = useState('resumen'); // 'resumen' o 'configuracion'
+  const [financeTab, setFinanceTab] = useState('resumen'); // 'resumen', 'lista-deseos', 'configuracion'
   
   const [financeCategories, setFinanceCategories] = useState({
     ingreso: [],
@@ -252,6 +253,32 @@ export default function App() {
   
   const [editingCategory, setEditingCategory] = useState(null);
   const [newCatName, setNewCatName] = useState({ ingreso: '', egreso: '', ahorro: '' });
+
+  // --- Estado de Lista de Deseos ---
+  const [wishlistItems, setWishlistItems] = useState([]);
+  const [newWishlistItem, setNewWishlistItem] = useState({ productName: '', model: '', price: '', purchaseLink: '', paymentCount: '' });
+  const [editingWishlistItemId, setEditingWishlistItemId] = useState(null);
+
+  const { activeWishlistItems, completedWishlistItems } = useMemo(() => {
+    const active = [];
+    const completed = [];
+    
+    const sortedItems = [...wishlistItems].sort((a, b) => (b.createdAt?.toMillis() || 0) - (a.createdAt?.toMillis() || 0));
+
+    for (const item of sortedItems) {
+      // Si un item tiene una fecha de completado, se considera completado.
+      if (item.completedAt) {
+        completed.push(item);
+      } else {
+        active.push(item);
+      }
+    }
+    
+    // Ordenar los completados por fecha, los más nuevos primero.
+    completed.sort((a, b) => (b.completedAt?.toMillis() || 0) - (a.completedAt?.toMillis() || 0));
+    
+    return { activeWishlistItems: active, completedWishlistItems: completed };
+  }, [wishlistItems]);
 
   // --- Estado de Anotaciones ---
   const [notes, setNotes] = useState([]);
@@ -310,6 +337,7 @@ export default function App() {
       setFinanceCategories({ ingreso: [], egreso: [], ahorro: [] });
       setFinanceLinks([]);
       setTransactions([]);
+      setWishlistItems([]);
       return;
     }
     const unsubscribes = [];
@@ -362,6 +390,9 @@ export default function App() {
 
       // Transacciones
       subscribe('transactions', setTransactions);
+
+      // Lista de Deseos
+      subscribe('wishlist', setWishlistItems);
 
       // Categorías Financieras (documento único)
       const financeConfigRef = doc(db, 'users', currentUser.uid, 'finances', 'config');
@@ -490,6 +521,86 @@ export default function App() {
   const handleDeleteFinanceLink = async (id) => {
     if (!currentUser) return;
     await deleteDoc(doc(db, 'users', currentUser.uid, 'financeLinks', id));
+  };
+
+  // --- Lógica de Lista de Deseos ---
+  const handleAddWishlistItem = async () => {
+    if (!newWishlistItem.productName.trim() || !newWishlistItem.price || !currentUser) return;
+    
+    const paymentCount = Number(newWishlistItem.paymentCount) || 0;
+    const data = {
+      productName: newWishlistItem.productName.trim(),
+      model: newWishlistItem.model.trim(),
+      price: Number(newWishlistItem.price),
+      purchaseLink: newWishlistItem.purchaseLink.trim(),
+      paymentCount,
+    };
+
+    if (editingWishlistItemId) {
+      const docRef = doc(db, 'users', currentUser.uid, 'wishlist', editingWishlistItemId);
+      const originalItem = wishlistItems.find(i => i.id === editingWishlistItemId);
+      
+      if (originalItem && Number(originalItem.paymentCount) !== paymentCount) {
+        const oldPayments = originalItem.payments || [];
+        const newPayments = Array(paymentCount).fill(false);
+        for (let i = 0; i < Math.min(oldPayments.length, paymentCount); i++) {
+          newPayments[i] = oldPayments[i];
+        }
+        data.payments = newPayments;
+      }
+
+      await updateDoc(docRef, data);
+      setEditingWishlistItemId(null);
+    } else {
+      const collectionRef = collection(db, 'users', currentUser.uid, 'wishlist');
+      data.payments = Array(paymentCount).fill(false);
+      data.completedAt = null;
+      await addDoc(collectionRef, { ...data, createdAt: serverTimestamp() });
+    }
+    setNewWishlistItem({ productName: '', model: '', price: '', purchaseLink: '', paymentCount: '' });
+  };
+
+  const handleEditWishlistItem = (item) => {
+    setEditingWishlistItemId(item.id);
+    setNewWishlistItem({
+      productName: item.productName,
+      model: item.model,
+      price: item.price,
+      purchaseLink: item.purchaseLink,
+      paymentCount: item.paymentCount || ''
+    });
+  };
+
+  const handleDeleteWishlistItem = async (id) => {
+    if (!currentUser) return;
+    await deleteDoc(doc(db, 'users', currentUser.uid, 'wishlist', id));
+  };
+
+  const cancelEditWishlistItem = () => {
+    setEditingWishlistItemId(null);
+    setNewWishlistItem({ productName: '', model: '', price: '', purchaseLink: '', paymentCount: '' });
+  };
+
+  const handlePaymentCheck = async (itemId, paymentIndex) => {
+    if (!currentUser) return;
+    const item = wishlistItems.find(i => i.id === itemId);
+    if (!item) return;
+    const docRef = doc(db, 'users', currentUser.uid, 'wishlist', itemId);
+    const newPayments = [...(item.payments || Array(item.paymentCount || 0).fill(false))];
+    newPayments[paymentIndex] = !newPayments[paymentIndex];
+
+    const paymentsMade = newPayments.filter(Boolean).length;
+    const isCompleted = item.paymentCount > 0 && paymentsMade === item.paymentCount;
+
+    const updateData = { payments: newPayments };
+
+    if (isCompleted && !item.completedAt) {
+      updateData.completedAt = serverTimestamp();
+    } else if (!isCompleted && item.completedAt) {
+      updateData.completedAt = null;
+    }
+    
+    await updateDoc(docRef, { ...updateData });
   };
 
   // --- Lógica de Anotaciones ---
@@ -1650,6 +1761,13 @@ export default function App() {
                     {financeTab === 'resumen' && <div className="absolute bottom-0 left-0 right-0 h-1 bg-blue-600 rounded-t-full"></div>}
                   </button>
                   <button 
+                    onClick={() => setFinanceTab('lista-deseos')}
+                    className={`pb-4 text-xs font-black uppercase tracking-widest transition-all relative ${financeTab === 'lista-deseos' ? 'text-blue-600' : 'text-slate-400 hover:text-slate-600'}`}
+                  >
+                    Lista de Deseos
+                    {financeTab === 'lista-deseos' && <div className="absolute bottom-0 left-0 right-0 h-1 bg-blue-600 rounded-t-full"></div>}
+                  </button>
+                  <button 
                     onClick={() => setFinanceTab('configuracion')}
                     className={`pb-4 text-xs font-black uppercase tracking-widest transition-all relative ${financeTab === 'configuracion' ? 'text-blue-600' : 'text-slate-400 hover:text-slate-600'}`}
                   >
@@ -1758,7 +1876,7 @@ export default function App() {
                       </div>
                    </div>
                  </>
-               ) : (
+               ) : financeTab === 'configuracion' ? (
                  /* Pestaña de Configuración de Categorías Financieras */                 
                  <div className="space-y-8 animate-in fade-in">
                    <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
@@ -1881,6 +1999,136 @@ export default function App() {
                          </div>
                       </div>
                    </div>
+                 </div>
+               ) : (
+                 /* Pestaña de Lista de Deseos */
+                 <div className="space-y-8 animate-in fade-in">
+                    {/* Formulario de nuevo item */}
+                    <div className="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm space-y-4">
+                        <h3 className="text-xs font-black uppercase tracking-widest text-slate-400">{editingWishlistItemId ? 'Editando Deseo' : 'Añadir a la Lista de Deseos'}</h3>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <input type="text" placeholder="Nombre del Producto" className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl outline-none text-sm font-bold focus:border-blue-500" value={newWishlistItem.productName} onChange={e => setNewWishlistItem({...newWishlistItem, productName: e.target.value})} />
+                            <input type="text" placeholder="Marca / Modelo (Opcional)" className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl outline-none text-sm focus:border-blue-500" value={newWishlistItem.model} onChange={e => setNewWishlistItem({...newWishlistItem, model: e.target.value})} />
+                        </div>
+                        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                            <input type="number" placeholder="Precio Estimado ($)" className="md:col-span-1 w-full p-3 bg-slate-50 border border-slate-200 rounded-xl outline-none text-sm font-bold focus:border-blue-500" value={newWishlistItem.price} onChange={e => setNewWishlistItem({...newWishlistItem, price: e.target.value})} />
+                            <input type="number" placeholder="Nº de Abonos" className="md:col-span-1 w-full p-3 bg-slate-50 border border-slate-200 rounded-xl outline-none text-sm font-bold focus:border-blue-500" value={newWishlistItem.paymentCount} onChange={e => setNewWishlistItem({...newWishlistItem, paymentCount: e.target.value})} />
+                            <input type="text" placeholder="Enlace de compra (Opcional)" className="md:col-span-2 w-full p-3 bg-slate-50 border border-slate-200 rounded-xl outline-none text-sm focus:border-blue-500" value={newWishlistItem.purchaseLink} onChange={e => setNewWishlistItem({...newWishlistItem, purchaseLink: e.target.value})} />
+                        </div>
+                        <div className="flex gap-2 justify-end pt-2">
+                            {editingWishlistItemId && (
+                                <button onClick={cancelEditWishlistItem} className="px-6 py-3 font-black text-slate-400 text-xs uppercase tracking-widest">Cancelar</button>
+                            )}
+                            <button onClick={handleAddWishlistItem} className="bg-blue-600 text-white px-8 py-3 rounded-xl hover:bg-blue-700 text-xs font-black uppercase tracking-widest shadow-lg shadow-blue-200 transition-all disabled:opacity-50" disabled={!newWishlistItem.productName || !newWishlistItem.price}>
+                                {editingWishlistItemId ? 'Actualizar Deseo' : 'Añadir Deseo'}
+                            </button>
+                        </div>
+                    </div>
+
+                    {/* Lista de deseos */}
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                        {activeWishlistItems.map(item => {
+                            const paymentsMadeCount = (item.payments || []).filter(Boolean).length;
+                            return (
+                            <div key={item.id} className="bg-white border border-slate-200 rounded-3xl p-6 flex flex-col group">
+                                <div className="flex justify-between items-start">
+                                    <div>
+                                        <h4 className="font-bold text-slate-800">{item.productName}</h4>
+                                        {item.model && <p className="text-xs text-slate-400 font-medium">{item.model}</p>}
+                                    </div>
+                                    <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                        <button onClick={() => handleEditWishlistItem(item)} className="p-2 text-slate-400 hover:text-blue-500 hover:bg-blue-50 rounded-lg"><Edit2 size={14} /></button>
+                                        <button onClick={() => handleDeleteWishlistItem(item.id)} className="p-2 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-lg"><Trash2 size={14} /></button>
+                                    </div>
+                                </div>
+                                <div className="flex justify-between items-center bg-slate-50 p-4 rounded-2xl mt-4">
+                                    <div>
+                                        <p className="text-[10px] font-black text-slate-400 uppercase">Precio</p>
+                                        <p className="text-2xl font-black text-slate-800">${Number(item.price).toLocaleString('es-ES')}</p>
+                                    </div>
+                                    {item.purchaseLink && (
+                                        <a href={item.purchaseLink} target="_blank" rel="noreferrer" className="bg-slate-900 text-white p-3 rounded-xl hover:bg-slate-800 transition-colors">
+                                            <ShoppingBag size={18} />
+                                        </a>
+                                    )}
+                                </div>
+                                
+                                {item.paymentCount > 0 && (
+                                    <div className="pt-4 border-t border-slate-100 space-y-3 mt-auto">
+                                        <div className="flex justify-between items-center">
+                                            <h5 className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Plan de Abonos</h5>
+                                            <span className="text-xs font-bold text-slate-500">{paymentsMadeCount} de {item.paymentCount} pagados</span>
+                                        </div>
+                                        <div className="w-full bg-slate-100 rounded-full h-1.5 mt-2">
+                                            <div className="bg-blue-600 h-1.5 rounded-full" style={{width: `${item.paymentCount > 0 ? (paymentsMadeCount / item.paymentCount) * 100 : 0}%`}}></div>
+                                        </div>
+                                        <div className="flex justify-between p-2 bg-slate-50 rounded-lg text-xs">
+                                            <span className="font-bold text-slate-500">{item.paymentCount} Abonos de:</span>
+                                            <span className="font-black text-blue-600">${(item.price / item.paymentCount).toLocaleString('es-ES', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                                        </div>
+                                        <div className="flex flex-wrap gap-2 pt-2">
+                                            {Array.from({ length: item.paymentCount }).map((_, index) => (
+                                                <button 
+                                                    key={index}
+                                                    onClick={() => handlePaymentCheck(item.id, index)}
+                                                    className={`w-6 h-6 rounded-md flex items-center justify-center transition-all ${
+                                                        item.payments && item.payments[index]
+                                                        ? 'bg-blue-600 text-white border border-blue-600 shadow'
+                                                        : 'bg-white border border-slate-200 hover:border-blue-400'
+                                                    }`}
+                                                >
+                                                    {item.payments && item.payments[index] && <Check size={12} strokeWidth={3} />}
+                                                </button>
+                                            ))}
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
+                        )})}
+                    </div>
+                    {activeWishlistItems.length === 0 && completedWishlistItems.length === 0 && (
+                        <div className="text-center p-16 bg-slate-50 rounded-3xl border border-dashed border-slate-200">
+                            <div className="w-16 h-16 bg-white rounded-full flex items-center justify-center mx-auto mb-4"><ShoppingBag className="text-slate-300" size={32} /></div>
+                            <h3 className="font-bold text-slate-700">Tu lista de deseos está vacía</h3>
+                            <p className="text-sm text-slate-500 mt-2">Añade algo que quieras comprar para empezar a planificar.</p>
+                        </div>
+                    )}
+
+                    {/* Registro de la lista de deseos */}
+                    {completedWishlistItems.length > 0 && (
+                        <div className="mt-12">
+                            <h3 className="text-xs font-black uppercase tracking-widest text-slate-400 mb-6">Registro de la Lista de Deseos</h3>
+                            <div className="bg-white border border-slate-200 rounded-3xl overflow-hidden shadow-sm">
+                                <div className="overflow-x-auto">
+                                    <table className="w-full text-left">
+                                        <thead>
+                                            <tr className="border-b border-slate-100 bg-slate-50/50">
+                                                <th className="p-5 text-[10px] font-black text-slate-400 uppercase">Producto</th>
+                                                <th className="p-5 text-[10px] font-black text-slate-400 uppercase text-right">Precio Final</th>
+                                                <th className="p-5 text-[10px] font-black text-slate-400 uppercase text-center">Fecha Completado</th>
+                                                <th className="p-5 text-[10px] font-black text-slate-400 uppercase text-center w-20">Acciones</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {completedWishlistItems.map(item => (
+                                                <tr key={item.id} className="border-b border-slate-50 last:border-0 hover:bg-slate-50/50 transition-colors group">
+                                                    <td className="p-5">
+                                                        <p className="font-bold text-sm text-slate-800">{item.productName}</p>
+                                                        {item.model && <p className="text-xs text-slate-400">{item.model}</p>}
+                                                    </td>
+                                                    <td className="p-5 text-sm font-black text-slate-800 text-right">${Number(item.price).toLocaleString('es-ES')}</td>
+                                                    <td className="p-5 text-xs text-slate-500 font-medium text-center">{item.completedAt?.toDate().toLocaleDateString('es-ES')}</td>
+                                                    <td className="p-5 text-center">
+                                                        <button onClick={() => handleDeleteWishlistItem(item.id)} className="p-2 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-lg opacity-0 group-hover:opacity-100 transition-all" title="Eliminar"><Trash2 size={16} /></button>
+                                                    </td>
+                                                </tr>
+                                            ))}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    )}
                  </div>
                )}
             </div>
