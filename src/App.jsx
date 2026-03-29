@@ -292,7 +292,13 @@ export default function App() {
   const [dateFrom, setDateFrom] = useState('2024-05-13');
   
   useEffect(() => {
-    if (!currentUser) {
+    // Si todavía estamos verificando el estado de autenticación, no hacemos nada.
+    // Esta es la corrección clave para evitar la limpieza de datos al recargar.
+    if (loading) {
+      return;
+    }
+
+    if (!currentUser && !loading) {
       // El usuario ha cerrado sesión, limpiar todos los datos locales.
       setNotes([]);
       setInboxItems([]);
@@ -372,7 +378,7 @@ export default function App() {
       return () => {
         unsubscribes.forEach(unsub => unsub());
       };
-  }, [currentUser]);
+  }, [currentUser, loading]);
 
   // --- Lógica de Finanzas ---
   const handleSignOut = async () => {
@@ -554,6 +560,26 @@ export default function App() {
     
     const updatedTasks = note.tasks.filter(t => t.id !== taskId);
     await updateDoc(noteDocRef, { tasks: updatedTasks });
+  };
+
+  const handleAddNoteTask = async (noteId) => {
+    if (!newNoteTaskTitle.trim() || !currentUser) return;
+    const noteDocRef = doc(db, 'users', currentUser.uid, 'notes', noteId);
+    const note = notes.find(n => n.id === noteId);
+    if (!note) return;
+
+    const newTask = {
+      id: crypto.randomUUID(),
+      title: newNoteTaskTitle.trim(),
+      completed: false,
+      completedAt: null
+    };
+
+    const updatedTasks = [...note.tasks, newTask];
+
+    await updateDoc(noteDocRef, { tasks: updatedTasks });
+    setNewNoteTaskTitle('');
+    setAddingTaskToNoteId(null);
   };
 
   const archiveNote = async (noteId, shouldArchive) => {
