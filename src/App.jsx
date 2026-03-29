@@ -292,23 +292,21 @@ export default function App() {
   const [dateFrom, setDateFrom] = useState('2024-05-13');
   
   useEffect(() => {
-    if (currentUser) {
-      // Si no hay usuario, limpia el estado y detiene la ejecución.
-      if (!currentUser) {
-        setNotes([]);
-        setInboxItems([]);
-        setMainEntities([]);
-        setSubcategories([]);
-        setTasks([]);
-        setResources([]);
-        setHabits([]);
-        setFinanceCategories({ ingreso: [], egreso: [], ahorro: [] });
-        setFinanceLinks([]);
-        setTransactions([]);
-        return;
-      }
-      const unsubscribes = [];
-
+    if (!currentUser) {
+      // El usuario ha cerrado sesión, limpiar todos los datos locales.
+      setNotes([]);
+      setInboxItems([]);
+      setMainEntities([]);
+      setSubcategories([]);
+      setTasks([]);
+      setResources([]);
+      setHabits([]);
+      setFinanceCategories({ ingreso: [], egreso: [], ahorro: [] });
+      setFinanceLinks([]);
+      setTransactions([]);
+      return;
+    }
+    const unsubscribes = [];
       const subscribe = (coll, setter, processor) => {
         const ref = collection(db, 'users', currentUser.uid, coll);
         const q = query(ref);
@@ -374,7 +372,6 @@ export default function App() {
       return () => {
         unsubscribes.forEach(unsub => unsub());
       };
-    }
   }, [currentUser]);
 
   // --- Lógica de Finanzas ---
