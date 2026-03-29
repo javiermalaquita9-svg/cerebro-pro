@@ -37,7 +37,6 @@ const LINK_ICONS = { Globe, Landmark, CreditCard, Building, PieChart, Wallet, Br
 
 // --- Subcomponentes Estáticos ---
 
-// eslint-disable-next-line no-unused-vars
 const SidebarButton = ({ icon: Icon, label, active, onClick }) => (
   <button 
     onClick={onClick} 
@@ -221,62 +220,32 @@ export default function App() {
   const [activeTab, setActiveTab] = useState('finances'); 
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [selectedParentId, setSelectedParentId] = useState(null);
-  const [searchQuery, setSearchQuery] = useState('');
+  const [searchQuery, setSearchQuery] = useState('');  
   
   // --- Estado de Datos Generales ---
-  const [mainEntities, setMainEntities] = useState([
-    { id: 'a1', type: 'areas', title: 'Salud Física y Mental', category: 'Personal', icon: 'Heart', color: 'text-red-500', bg: 'bg-red-50', details: 'Mi área central para el bienestar. Incluye dieta, ejercicio, sueño y salud mental.' },
-    { id: 'a2', type: 'areas', title: 'Carrera Profesional', category: 'Empresa', icon: 'Briefcase', color: 'text-blue-500', bg: 'bg-blue-50', details: '' },
-    { id: 'c1', type: 'courses', title: 'Maestría en React', category: 'Tecnología', icon: 'BookOpen', color: 'text-cyan-500', bg: 'bg-cyan-50', details: 'Curso intensivo para dominar React y su ecosistema.' },
-    { id: 'p1', type: 'projects', title: 'Lanzamiento de App', category: 'Empresa', icon: 'Rocket', color: 'text-purple-500', bg: 'bg-purple-50', details: '' },
-  ]);
-
-  const [subcategories, setSubcategories] = useState([
-    { id: 1, parentId: 'a1', title: 'Nutrición Pro', objTitle: 'Déficit Calórico', objDesc: 'Bajar al 12% de grasa corporal.', start: '2024-05-01', end: '2024-08-01' },
-    { id: 2, parentId: 'c1', title: 'Módulo: Hooks Avanzados', objTitle: 'Mastering useMemo', objDesc: 'Optimizar renders pesados.', start: '2024-06-01', end: '2024-06-15' },
-    { id: 3, parentId: 'p1', title: 'Fase 1: MVP', objTitle: 'Diseño y Prototipo', objDesc: 'Tener la versión inicial lista para pruebas con usuarios.', start: '2024-05-15', end: '2024-06-30' },
-  ]);
-
-  const [tasks, setTasks] = useState([
-    { id: 1, subId: 1, title: 'Comprar balanza gramera', completed: false, completedAt: null },
-    { id: 2, subId: 1, title: 'Preparar batch cooking', completed: true, completedAt: '2024-05-12' },
-    { id: 3, subId: 3, title: 'Crear Wireframes en Figma', completed: false, completedAt: null },
-  ]);
-
-  const [resources, setResources] = useState([
-    { id: 1, subId: 2, type: 'video', title: 'Tutorial Hooks', url: 'https://youtube.com/...' },
-  ]);
-
-  const [habits, setHabits] = useState([
-    { id: 1, name: 'Meditar 10 min', desc: 'Calmar la mente para mejorar el enfoque', completed: [true, true, false, true, false, false, false] },
-    { id: 2, name: 'Leer 20 páginas', desc: 'Fomentar el aprendizaje continuo', completed: [true, true, true, false, true, true, false] },
-  ]);
+  const [mainEntities, setMainEntities] = useState([]);
+  const [subcategories, setSubcategories] = useState([]);
+  const [tasks, setTasks] = useState([]);
+  const [resources, setResources] = useState([]);
+  const [habits, setHabits] = useState([]);
 
   // --- Estado de Finanzas ---
   const [financeTab, setFinanceTab] = useState('resumen'); // 'resumen' o 'configuracion'
   
   const [financeCategories, setFinanceCategories] = useState({
-    ingreso: ['Salario', 'Honorarios', 'Ventas'],
-    egreso: ['Servicios', 'Alimentación', 'Transporte', 'Entretenimiento', 'Salud'],
-    ahorro: ['Fondo de Emergencia', 'Inversión ETF', 'Viajes']
+    ingreso: [],
+    egreso: [],
+    ahorro: []
   });
 
-  const [financeLinks, setFinanceLinks] = useState([
-    { id: 1, title: 'Mi Banco Principal', url: 'https://www.banco.com', icon: 'Landmark' },
-    { id: 2, title: 'Plataforma de Inversión', url: 'https://www.broker.com', icon: 'PieChart' }
-  ]);
+  const [financeLinks, setFinanceLinks] = useState([]);
   const [newFinanceLink, setNewFinanceLink] = useState({ title: '', url: '', icon: 'Globe' });
 
-  const [transactions, setTransactions] = useState([
-    { id: 1, type: 'ingreso', amount: 2500, desc: 'Sueldo Base', date: '2024-05-01', category: 'Salario' },
-    { id: 2, type: 'egreso', amount: 45, desc: 'Internet y Teléfono', date: '2024-05-05', category: 'Servicios' },
-    { id: 3, type: 'egreso', amount: 150, desc: 'Supermercado', date: '2024-05-10', category: 'Alimentación' },
-    { id: 4, type: 'ahorro', amount: 300, desc: 'Ahorro Automático', date: '2024-05-15', category: 'Fondo de Emergencia' },
-  ]);
+  const [transactions, setTransactions] = useState([]);
   
   const [isFinanceModalOpen, setIsFinanceModalOpen] = useState(false);
   const [editingTransactionId, setEditingTransactionId] = useState(null);
-  const [newTransaction, setNewTransaction] = useState({ type: 'egreso', amount: '', desc: '', date: new Date().toISOString().split('T')[0], category: financeCategories.egreso[0] });
+  const [newTransaction, setNewTransaction] = useState({ type: 'egreso', amount: '', desc: '', date: new Date().toISOString().split('T')[0], category: '' });
   
   const [financeDateFrom, setFinanceDateFrom] = useState('2024-05-01');
   const [financeDateTo, setFinanceDateTo] = useState('2024-05-31');
@@ -296,10 +265,7 @@ export default function App() {
   const [expandedArchivedNoteId, setExpandedArchivedNoteId] = useState(null);
 
   // --- Estado de Bandeja de Entrada ---
-  const [inboxItems, setInboxItems] = useState([
-    { id: 'i1', text: 'Revisar el nuevo libro de Atomic Habits', createdAt: '2024-05-21T11:00:00Z' },
-    { id: 'i2', text: 'Idea para el proyecto X: usar D3.js para las visualizaciones', createdAt: '2024-05-21T12:30:00Z' }
-  ]);
+  const [inboxItems, setInboxItems] = useState([]);
   const [newInboxItemText, setNewInboxItemText] = useState('');
   const [processingItemId, setProcessingItemId] = useState(null);
   const [taskTargetSubId, setTaskTargetSubId] = useState('');
@@ -325,28 +291,88 @@ export default function App() {
   const [newResForm, setNewResForm] = useState({ title: '', url: '', type: 'video' });
   const [dateFrom, setDateFrom] = useState('2024-05-13');
   
-  // --- Lógica de Sincronización con Firestore ---
   useEffect(() => {
     if (currentUser) {
-      // Si hay un usuario, nos suscribimos a sus anotaciones.
-      const notesCollectionRef = collection(db, 'users', currentUser.uid, 'notes');
-      const q = query(notesCollectionRef);
+      // Si no hay usuario, limpia el estado y detiene la ejecución.
+      if (!currentUser) {
+        setNotes([]);
+        setInboxItems([]);
+        setMainEntities([]);
+        setSubcategories([]);
+        setTasks([]);
+        setResources([]);
+        setHabits([]);
+        setFinanceCategories({ ingreso: [], egreso: [], ahorro: [] });
+        setFinanceLinks([]);
+        setTransactions([]);
+        return;
+      }
+      const unsubscribes = [];
 
-      const unsubscribe = onSnapshot(q, (querySnapshot) => {
-        const notesData = querySnapshot.docs.map(doc => ({
-          id: doc.id,
-          ...doc.data(),
-          createdAt: doc.data().createdAt?.toDate().toISOString(),
-          tasks: doc.data().tasks.map(t => ({ ...t, completedAt: t.completedAt?.toDate()?.toISOString() || null }))
-        }));
-        setNotes(notesData);
-      });
+      const subscribe = (coll, setter, processor) => {
+        const ref = collection(db, 'users', currentUser.uid, coll);
+        const q = query(ref);
+        const unsubscribe = onSnapshot(q, (snapshot) => {
+          const data = snapshot.docs.map(doc => {
+            const docData = { id: doc.id, ...doc.data() };
+            return processor ? processor(docData) : docData;
+          });
+          setter(data);
+        });
+        unsubscribes.push(unsubscribe);
+      };
 
-      // La función de limpieza se ejecuta cuando el usuario cambia o el componente se desmonta.
+      // Anotaciones
+      subscribe('notes', setNotes, (docData) => ({
+        ...docData,
+        createdAt: docData.createdAt?.toDate().toISOString(),
+        tasks: (docData.tasks || []).map(t => ({ ...t, completedAt: t.completedAt?.toDate()?.toISOString() || null }))
+      }));
+
+      // Bandeja de Entrada
+      subscribe('inbox', setInboxItems, (docData) => ({
+        ...docData,
+        createdAt: docData.createdAt?.toDate().toISOString()
+      }));
+
+      // Entidades Principales
+      subscribe('mainEntities', setMainEntities);
+      
+      // Subcategorías
+      subscribe('subcategories', setSubcategories);
+
+      // Tareas
+      subscribe('tasks', setTasks, (docData) => ({
+        ...docData,
+        completedAt: docData.completedAt?.toDate()?.toISOString() || null
+      }));
+
+      // Recursos
+      subscribe('resources', setResources);
+
+      // Hábitos
+      subscribe('habits', setHabits);
+
+      // Enlaces Financieros
+      subscribe('financeLinks', setFinanceLinks);
+
+      // Transacciones
+      subscribe('transactions', setTransactions);
+
+      // Categorías Financieras (documento único)
+      const financeConfigRef = doc(db, 'users', currentUser.uid, 'finances', 'config');
+      unsubscribes.push(onSnapshot(financeConfigRef, (doc) => {
+        if (doc.exists()) {
+          const config = doc.data();
+          setFinanceCategories(config.categories || { ingreso: [], egreso: [], ahorro: [] });
+        } else {
+          // Si no existe, puedes inicializarlo con valores por defecto
+          setFinanceCategories({ ingreso: ['Salario'], egreso: ['Servicios'], ahorro: ['General'] });
+        }
+      }));
+
       return () => {
-        unsubscribe();
-        setNotes([]); // Limpiamos el estado al cerrar sesión.
-        // Aquí también se limpiarían los otros estados.
+        unsubscribes.forEach(unsub => unsub());
       };
     }
   }, [currentUser]);
@@ -379,17 +405,21 @@ export default function App() {
     return { ingresos, egresos, ahorros, balance, tasaAhorro: tasaAhorro.toFixed(1) };
   }, [filteredTransactions]);
 
-  const handleAddTransaction = () => {
-    if (!newTransaction.amount || !newTransaction.desc) return;
+  const handleAddTransaction = async () => {
+    if (!newTransaction.amount || !newTransaction.desc || !currentUser) return;
     
+    const transactionData = { ...newTransaction, amount: Number(newTransaction.amount) };
+
     if (editingTransactionId) {
-      setTransactions(transactions.map(t => t.id === editingTransactionId ? { ...newTransaction, amount: Number(newTransaction.amount) } : t));
+      const docRef = doc(db, 'users', currentUser.uid, 'transactions', editingTransactionId);
+      await updateDoc(docRef, transactionData);
       setEditingTransactionId(null);
     } else {
-      setTransactions([{ ...newTransaction, id: crypto.randomUUID(), amount: Number(newTransaction.amount) }, ...transactions]);
+      const collectionRef = collection(db, 'users', currentUser.uid, 'transactions');
+      await addDoc(collectionRef, transactionData);
     }
     setIsFinanceModalOpen(false);
-    setNewTransaction({ type: 'egreso', amount: '', desc: '', date: new Date().toISOString().split('T')[0], category: financeCategories.egreso[0] });
+    setNewTransaction({ type: 'egreso', amount: '', desc: '', date: new Date().toISOString().split('T')[0], category: financeCategories.egreso[0] || '' });
   };
 
   const handleEditTransaction = (t) => {
@@ -398,52 +428,64 @@ export default function App() {
     setIsFinanceModalOpen(true);
   };
 
-  const handleDeleteTransaction = (id) => {
-    setTransactions(transactions.filter(t => t.id !== id));
+  const handleDeleteTransaction = async (id) => {
+    if (!currentUser) return;
+    await deleteDoc(doc(db, 'users', currentUser.uid, 'transactions', id));
   };
 
   const handleTransactionTypeChange = (type) => {
     setNewTransaction({ ...newTransaction, type, category: financeCategories[type][0] || '' });
   };
 
-  const handleAddFinanceCategory = (type) => {
-    if (!newCatName.val.trim() || newCatName.type !== type) return;
-    setFinanceCategories(prev => ({
-        ...prev,
-        [type]: [...prev[type], newCatName.val.trim()]
-    }));
+  const handleAddFinanceCategory = async (type) => {
+    if (!newCatName.val.trim() || newCatName.type !== type || !currentUser) return;
+    const financeConfigRef = doc(db, 'users', currentUser.uid, 'finances', 'config');
+    const newCategories = {
+      ...financeCategories,
+      [type]: [...financeCategories[type], newCatName.val.trim()]
+    };
+    await updateDoc(financeConfigRef, { categories: newCategories });
     setNewCatName({ type: '', val: '' });
   };
 
-  const handleDeleteFinanceCategory = (type, cat) => {
-    setFinanceCategories(prev => ({
-        ...prev,
-        [type]: prev[type].filter(c => c !== cat)
-    }));
+  const handleDeleteFinanceCategory = async (type, cat) => {
+    if (!currentUser) return;
+    const financeConfigRef = doc(db, 'users', currentUser.uid, 'finances', 'config');
+    const newCategories = {
+      ...financeCategories,
+      [type]: financeCategories[type].filter(c => c !== cat)
+    };
+    await updateDoc(financeConfigRef, { categories: newCategories });
   };
 
-  const handleSaveEditCategory = () => {
-    if (!editingCategory.newVal.trim()) return;
-    setFinanceCategories(prev => ({
-        ...prev,
-        [editingCategory.type]: prev[editingCategory.type].map(c => c === editingCategory.oldVal ? editingCategory.newVal.trim() : c)
-    }));
-    setTransactions(prev => prev.map(t => 
-        (t.type === editingCategory.type && t.category === editingCategory.oldVal) 
-        ? { ...t, category: editingCategory.newVal.trim() } 
-        : t
-    ));
+  const handleSaveEditCategory = async () => {
+    if (!editingCategory.newVal.trim() || !currentUser) return;
+    const financeConfigRef = doc(db, 'users', currentUser.uid, 'finances', 'config');
+    const newCategories = {
+      ...financeCategories,
+      [editingCategory.type]: financeCategories[editingCategory.type].map(c => c === editingCategory.oldVal ? editingCategory.newVal.trim() : c)
+    };
+    await updateDoc(financeConfigRef, { categories: newCategories });
+    // Nota: Actualizar las transacciones existentes que usan esta categoría
+    // es una operación más compleja, idealmente manejada con un script de migración
+    // o una Cloud Function para garantizar la consistencia de los datos.
     setEditingCategory(null);
   };
 
-  const handleAddFinanceLink = () => {
-    if (!newFinanceLink.title.trim() || !newFinanceLink.url.trim()) return;
-    setFinanceLinks([...financeLinks, { id: crypto.randomUUID(), title: newFinanceLink.title.trim(), url: newFinanceLink.url.trim(), icon: newFinanceLink.icon }]);
+  const handleAddFinanceLink = async () => {
+    if (!newFinanceLink.title.trim() || !newFinanceLink.url.trim() || !currentUser) return;
+    const linksCollectionRef = collection(db, 'users', currentUser.uid, 'financeLinks');
+    await addDoc(linksCollectionRef, { 
+      title: newFinanceLink.title.trim(), 
+      url: newFinanceLink.url.trim(), 
+      icon: newFinanceLink.icon 
+    });
     setNewFinanceLink({ title: '', url: '', icon: 'Globe' });
   };
 
-  const handleDeleteFinanceLink = (id) => {
-    setFinanceLinks(financeLinks.filter(l => l.id !== id));
+  const handleDeleteFinanceLink = async (id) => {
+    if (!currentUser) return;
+    await deleteDoc(doc(db, 'users', currentUser.uid, 'financeLinks', id));
   };
 
   // --- Lógica de Anotaciones ---
@@ -481,34 +523,13 @@ export default function App() {
   };
 
   const handleAddTaskToNewNote = () => {
-    if (!newNoteTaskInput.trim()) return;
-    const newTask = {
-        id: crypto.randomUUID(),
-        title: newNoteTaskInput.trim(),
-        completed: false,
-        completedAt: null
-    };
+    if (!newNoteTaskInput.trim()) return;    const newTask = { id: crypto.randomUUID(), title: newNoteTaskInput.trim(), completed: false, completedAt: null };
     setNewNoteTasks([...newNoteTasks, newTask]);
     setNewNoteTaskInput('');
   };
 
   const handleRemoveTaskFromNewNote = (taskId) => {
     setNewNoteTasks(newNoteTasks.filter(t => t.id !== taskId));
-  };
-
-  const handleAddNoteTask = async (noteId) => {
-      if (!newNoteTaskTitle.trim() || !currentUser) return;
-      const noteDocRef = doc(db, 'users', currentUser.uid, 'notes', noteId);
-      const note = notes.find(n => n.id === noteId);
-      if (!note) return;
-      
-      const newTask = { id: crypto.randomUUID(), title: newNoteTaskTitle, completed: false, completedAt: null };
-      const updatedTasks = [...note.tasks, newTask];
-      
-      await updateDoc(noteDocRef, { tasks: updatedTasks });
-      
-      setNewNoteTaskTitle('');
-      setAddingTaskToNoteId(null);
   };
 
   const toggleNoteTask = async (noteId, taskId) => {
@@ -520,7 +541,7 @@ export default function App() {
     const updatedTasks = note.tasks.map(t => {
       if (t.id === taskId) {
         const isNowCompleted = !t.completed;
-        return { ...t, completed: isNowCompleted, completedAt: isNowCompleted ? new Date() : null };
+        return { ...t, completed: isNowCompleted, completedAt: isNowCompleted ? serverTimestamp() : null };
       }
       return t;
     });
@@ -551,80 +572,86 @@ export default function App() {
   };
 
   // --- Lógica de Bandeja de Entrada ---
-  const handleAddInboxItem = () => {
-    if (!newInboxItemText.trim()) return;
-    const newItem = {
-        id: crypto.randomUUID(),
+  const handleAddInboxItem = async () => {
+    if (!newInboxItemText.trim() || !currentUser) return;
+    await addDoc(collection(db, 'users', currentUser.uid, 'inbox'), {
         text: newInboxItemText.trim(),
-        createdAt: new Date().toISOString()
-    };
-    setInboxItems([newItem, ...inboxItems]);
+        createdAt: serverTimestamp()
+    });
     setNewInboxItemText('');
   };
 
-  const handleDeleteInboxItem = (itemId) => {
-    setInboxItems(inboxItems.filter(i => i.id !== itemId));
+  const handleDeleteInboxItem = async (itemId) => {
+    if (!currentUser) return;
+    await deleteDoc(doc(db, 'users', currentUser.uid, 'inbox', itemId));
     if (processingItemId === itemId) {
       setProcessingItemId(null);
     }
   };
 
   const handleSelectProcessingItem = (itemId) => {
-    setProcessingItemId(itemId);
+    setProcessingItemId(itemId);    
     setShowTaskAssignment(false);
     setTaskTargetSubId('');
     setIsEditingInboxItem(false);
   };
 
-  const processItem = (action) => {
+  const processItem = async (action) => {
     const itemToProcess = inboxItems.find(i => i.id === processingItemId);
-    if (!itemToProcess) return;
+    if (!itemToProcess || !currentUser) return;
 
-    const { text } = itemToProcess;
+    const { text, id } = itemToProcess;
 
-    switch (action) {
-        case 'toTask':
-            if (!taskTargetSubId) {
-                alert("Por favor, selecciona una subcategoría para la tarea.");
+    try {
+        const inboxItemRef = doc(db, 'users', currentUser.uid, 'inbox', id);
+
+        switch (action) {
+            case 'toTask':
+                if (!taskTargetSubId) {
+                    alert("Por favor, selecciona una subcategoría para la tarea.");
+                    return;
+                }
+                await addDoc(collection(db, 'users', currentUser.uid, 'tasks'), { subId: taskTargetSubId, title: text, completed: false, completedAt: null });
+                break;
+            case 'toNote':
+                await addDoc(collection(db, 'users', currentUser.uid, 'notes'), { title: text, details: '', createdAt: serverTimestamp(), archived: false, tasks: [] });
+                break;
+            case 'toHabit':
+                await addDoc(collection(db, 'users', currentUser.uid, 'habits'), { name: text, desc: 'Añadir descripción...', completed: new Array(7).fill(false) });
+                break;
+            case 'toArea':
+            case 'toProject':
+            case 'toCourse':
+                {
+                  const entityTypeMap = { toArea: 'areas', toProject: 'projects', toCourse: 'courses' };
+                  await addDoc(collection(db, 'users', currentUser.uid, 'mainEntities'), {
+                      type: entityTypeMap[action],
+                      title: text,
+                      category: 'Desde Bandeja',
+                      icon: 'Folder',
+                      color: 'text-gray-500', bg: 'bg-gray-50',
+                      details: ''
+                  });
+                  break;
+                }
+            default:
                 return;
-            }
-            setTasks([...tasks, { id: crypto.randomUUID(), subId: taskTargetSubId, title: text, completed: false, completedAt: null }]);
-            break;
-        case 'toNote':
-            setNotes([{ id: crypto.randomUUID(), title: text, createdAt: new Date().toISOString(), archived: false, tasks: [] }, ...notes]);
-            break;
-        case 'toHabit':
-            setHabits([...habits, { id: crypto.randomUUID(), name: text, desc: 'Añadir descripción...', completed: new Array(7).fill(false) }]);
-            break;
-        case 'toArea':
-        case 'toProject':
-        case 'toCourse':
-            {
-              const entityTypeMap = { toArea: 'areas', toProject: 'projects', toCourse: 'courses' };
-              setMainEntities([...mainEntities, {
-                  id: crypto.randomUUID(),
-                  type: entityTypeMap[action],
-                  title: text,
-                  category: 'Desde Bandeja',
-                  icon: 'Folder',
-                  color: 'text-gray-500', bg: 'bg-gray-50'
-              }]);
-              break;
-            }
-        default:
-            return;
-    }
+        }
 
-    // Limpiar después de procesar
-    setInboxItems(inboxItems.filter(i => i.id !== processingItemId));
-    setProcessingItemId(null);
-    setShowTaskAssignment(false);
-    setTaskTargetSubId('');
+        await deleteDoc(inboxItemRef);
+
+        setProcessingItemId(null);
+        setShowTaskAssignment(false);
+        setTaskTargetSubId('');
+    } catch (error) {
+        console.error("Error procesando el elemento de la bandeja de entrada: ", error);
+    }
   };
 
-  const handleUpdateInboxItemText = () => {
-    if (!editedInboxItemText.trim()) return;
-    setInboxItems(inboxItems.map(item => item.id === processingItemId ? { ...item, text: editedInboxItemText.trim() } : item));
+  const handleUpdateInboxItemText = async () => {
+    if (!editedInboxItemText.trim() || !currentUser || !processingItemId) return;
+    const itemRef = doc(db, 'users', currentUser.uid, 'inbox', processingItemId);
+    await updateDoc(itemRef, { text: editedInboxItemText.trim() });
     setIsEditingInboxItem(false);
     setEditedInboxItemText('');
   };
@@ -643,86 +670,107 @@ export default function App() {
     return Math.round(totalProgress / subs.length);
   };
 
-  const handleCreateEntity = () => {
-    if (!newForm.title) return;
-    if (editingEntityId) {
-      setMainEntities(mainEntities.map(e => e.id === editingEntityId ? { ...e, ...newForm } : e));
+  const handleCreateEntity = async () => {
+    if (!newForm.title || !currentUser) return;
+    const collectionRef = collection(db, 'users', currentUser.uid, 'mainEntities');
+    
+    if (editingEntityId) {      
+      const docRef = doc(db, 'users', currentUser.uid, 'mainEntities', editingEntityId);
+      await updateDoc(docRef, newForm);
       setEditingEntityId(null);
     } else {
-      const newEntry = { ...newForm, id: crypto.randomUUID(), type: activeTab, color: 'text-blue-500', bg: 'bg-blue-50' };
-      setMainEntities([...mainEntities, newEntry]);
+      const newEntry = { ...newForm, type: activeTab, color: 'text-blue-500', bg: 'bg-blue-50' };
+      await addDoc(collectionRef, newEntry);
     }
     setIsModalOpen(false);
     setNewForm({ title: '', category: 'General', icon: 'Folder', details: '' });
   };
 
   const handleEditEntityInit = (entity) => {
-    setNewForm({ title: entity.title, category: entity.category, icon: entity.icon, details: entity.details || '' });
+    setNewForm({ title: entity.title, category: entity.category, icon: entity.icon, details: entity.details || '' });    
     setEditingEntityId(entity.id);
     setIsModalOpen(true);
   };
 
-  const handleDeleteEntity = (id) => {
-    setMainEntities(mainEntities.filter(e => e.id !== id));
-    const subsToRemove = subcategories.filter(s => s.parentId === id).map(s => s.id);
-    setSubcategories(subcategories.filter(s => s.parentId !== id));
-    setTasks(tasks.filter(t => !subsToRemove.includes(t.subId)));
-    setResources(resources.filter(r => !subsToRemove.includes(r.subId)));
+  const handleDeleteEntity = async (id) => {
+    if (!currentUser) return;
+    // NOTA: Esta es una eliminación simplificada. Para una app en producción,
+    // se recomienda usar una Cloud Function para eliminar subcolecciones de forma atómica.
+    const subsToDelete = subcategories.filter(s => s.parentId === id);
+    for (const sub of subsToDelete) {
+      await handleDeleteSub(sub.id, true); // Llama a la eliminación en cascada
+    }
+    await deleteDoc(doc(db, 'users', currentUser.uid, 'mainEntities', id));
     setEntityToDelete(null);
+    if (selectedParentId === id) setSelectedParentId(null);
   };
 
-  const handleAddSub = () => {
-    if (!newSubForm.title || !selectedParentId) return;
-    const nSub = { id: crypto.randomUUID(), parentId: selectedParentId, ...newSubForm };
-    setSubcategories([...subcategories, nSub]);
+  const handleAddSub = async () => {
+    if (!newSubForm.title || !selectedParentId || !currentUser) return;
+    const nSub = { parentId: selectedParentId, ...newSubForm };
+    await addDoc(collection(db, 'users', currentUser.uid, 'subcategories'), nSub);
     setIsSubModalOpen(false);
     setNewSubForm({ title: '', objTitle: '', objDesc: '', start: '', end: '' });
   };
 
-  const handleDeleteSub = (subId) => {
-    setSubcategories(subcategories.filter(s => s.id !== subId));
-    setTasks(tasks.filter(t => t.subId !== subId));
-    setResources(resources.filter(r => r.subId !== subId));
-    setSubToDelete(null);
+  const handleDeleteSub = async (subId, fromParentDelete = false) => {
+    if (!currentUser) return;
+    // NOTA: Eliminación simplificada.
+    const tasksToDelete = tasks.filter(t => t.subId === subId);
+    for (const task of tasksToDelete) {
+      await deleteDoc(doc(db, 'users', currentUser.uid, 'tasks', task.id));
+    }
+    const resourcesToDelete = resources.filter(r => r.subId === subId);
+    for (const resource of resourcesToDelete) {
+      await deleteDoc(doc(db, 'users', currentUser.uid, 'resources', resource.id));
+    }
+    await deleteDoc(doc(db, 'users', currentUser.uid, 'subcategories', subId));
+    if (!fromParentDelete) {
+      setSubToDelete(null);
+    }
   };
 
-  const handleAddTask = (sId) => {
-    if (!newTaskTitle.trim()) return;
-    setTasks([...tasks, { id: crypto.randomUUID(), subId: sId, title: newTaskTitle, completed: false, completedAt: null }]);
+  const handleAddTask = async (sId) => {
+    if (!newTaskTitle.trim() || !currentUser) return;
+    await addDoc(collection(db, 'users', currentUser.uid, 'tasks'), { subId: sId, title: newTaskTitle, completed: false, completedAt: null });
     setNewTaskTitle('');
     setAddingTaskToSubId(null);
   };
 
-  const handleAddRes = (sId) => {
-    if (!newResForm.title || !newResForm.url) return;
-    setResources([...resources, { id: crypto.randomUUID(), subId: sId, ...newResForm }]);
+  const handleAddRes = async (sId) => {
+    if (!newResForm.title || !newResForm.url || !currentUser) return;
+    await addDoc(collection(db, 'users', currentUser.uid, 'resources'), { subId: sId, ...newResForm });
     setNewResForm({ title: '', url: '', type: 'video' });
     setAttachingToSubId(null);
   };
 
-  const updateSubInfo = (sId, fields) => {
-    setSubcategories(subcategories.map(s => s.id === sId ? { ...s, ...fields } : s));
+  const updateSubInfo = async (sId, fields) => {
+    if (!currentUser) return;
+    await updateDoc(doc(db, 'users', currentUser.uid, 'subcategories', sId), fields);
   };
 
-  const handleAddHabit = () => {
-    if (!newHabitForm.name.trim() || !newHabitForm.desc.trim()) return;
-    setHabits([...habits, { id: crypto.randomUUID(), name: newHabitForm.name.trim(), desc: newHabitForm.desc.trim(), completed: new Array(7).fill(false) }]);
+  const handleAddHabit = async () => {
+    if (!newHabitForm.name.trim() || !newHabitForm.desc.trim() || !currentUser) return;
+    await addDoc(collection(db, 'users', currentUser.uid, 'habits'), { 
+      name: newHabitForm.name.trim(), 
+      desc: newHabitForm.desc.trim(), 
+      completed: new Array(7).fill(false) 
+    });
     setNewHabitForm({ name: '', desc: '' });
   };
 
-  const toggleHabitDay = (habitId, dayIndex) => {
-    setHabits(habits.map(h => {
-      if (h.id === habitId) {
-        const newStatus = [...h.completed];
-        newStatus[dayIndex] = !newStatus[dayIndex];
-        return { ...h, completed: newStatus };
-      }
-      return h;
-    }));
+  const toggleHabitDay = async (habitId, dayIndex) => {
+    if (!currentUser) return;
+    const habit = habits.find(h => h.id === habitId);
+    if (!habit) return;
+    const newStatus = [...habit.completed];
+    newStatus[dayIndex] = !newStatus[dayIndex];
+    await updateDoc(doc(db, 'users', currentUser.uid, 'habits', habitId), { completed: newStatus });
   };
 
-  const handleDeleteHabit = (id) => {
-    setHabits(habits.filter(h => h.id !== id));
+  const handleDeleteHabit = async (id) => {
+    if (!currentUser) return;
+    await deleteDoc(doc(db, 'users', currentUser.uid, 'habits', id));
   };
 
   // --- Memos y Filtros ---
@@ -747,8 +795,8 @@ export default function App() {
     return tasks.filter(t => subIds.includes(t.subId) && t.completed);
   }, [tasks, subcategories, selectedParentId]);
 
-  const activeNotes = useMemo(() => notes.filter(n => !n.archived).sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt)), [notes]);
-  const archivedNotes = useMemo(() => notes.filter(n => n.archived).sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt)), [notes]);
+  const activeNotes = useMemo(() => notes.filter(n => !n.archived), [notes]);
+  const archivedNotes = useMemo(() => notes.filter(n => n.archived), [notes]);
 
   const processingItem = useMemo(() => inboxItems.find(i => i.id === processingItemId), [inboxItems, processingItemId]);
 
@@ -1063,9 +1111,16 @@ export default function App() {
                           <div className="space-y-2.5 max-h-40 overflow-y-auto pr-1">
                             {subTasks.map(task => (
                               <div key={task.id} className="flex items-center gap-3 group/task">
-                                <button onClick={() => setTasks(tasks.map(t => t.id === task.id ? {...t, completed: !t.completed, completedAt: !t.completed ? new Date().toISOString().split('T')[0] : null} : t))} className={`w-5 h-5 rounded-md flex items-center justify-center transition-all ${task.completed ? 'bg-emerald-500 text-white border border-emerald-500' : 'bg-white border border-slate-200 hover:border-emerald-400 hover:text-emerald-500 text-transparent'}`}><Check size={12} strokeWidth={3} /></button>
+                                <button onClick={async () => {
+                                  if (!currentUser) return;
+                                  const docRef = doc(db, 'users', currentUser.uid, 'tasks', task.id);
+                                  await updateDoc(docRef, {
+                                    completed: !task.completed,
+                                    completedAt: !task.completed ? serverTimestamp() : null
+                                  });
+                                }} className={`w-5 h-5 rounded-md flex items-center justify-center transition-all ${task.completed ? 'bg-emerald-500 text-white border border-emerald-500' : 'bg-white border border-slate-200 hover:border-emerald-400 hover:text-emerald-500 text-transparent'}`}><Check size={12} strokeWidth={3} /></button>
                                 <span className={`text-xs flex-1 font-medium transition-all ${task.completed ? 'line-through text-slate-400' : 'text-slate-700'}`}>{task.title}</span>
-                                <button onClick={() => setTasks(tasks.filter(t => t.id !== task.id))} className="text-slate-300 opacity-0 group-hover/task:opacity-100 hover:text-red-500 transition-all"><Trash2 size={12} /></button>
+                                <button onClick={async () => { if(currentUser) await deleteDoc(doc(db, 'users', currentUser.uid, 'tasks', task.id)) }} className="text-slate-300 opacity-0 group-hover/task:opacity-100 hover:text-red-500 transition-all"><Trash2 size={12} /></button>
                               </div>
                             ))}
                             {subTasks.length === 0 && (
@@ -1110,9 +1165,9 @@ export default function App() {
                                  res.type === 'docs' ? <FileType size={14} className="text-blue-500" /> :
                                  <LinkIcon size={14} className="text-slate-500" />}
                                 <span className="text-[11px] font-bold text-slate-600 truncate flex-1">{res.title}</span>
-                                <div className="flex gap-1 opacity-0 group-hover/res:opacity-100 transition-all">
+                                <div className="flex gap-1 opacity-0 group-hover/res:opacity-100 transition-all">                                  
                                   <a href={res.url} target="_blank" rel="noreferrer" className="p-1 text-slate-400 hover:text-blue-500"><ExternalLink size={12}/></a>
-                                  <button onClick={() => setResources(resources.filter(x => x.id !== res.id))} className="p-1 text-slate-400 hover:text-red-500"><Trash2 size={12}/></button>
+                                  <button onClick={async () => { if(currentUser) await deleteDoc(doc(db, 'users', currentUser.uid, 'resources', res.id)) }} className="p-1 text-slate-400 hover:text-red-500"><Trash2 size={12}/></button>
                                 </div>
                               </div>
                             ))}
@@ -1164,8 +1219,15 @@ export default function App() {
                                             </td>
                                             <td className="p-5 text-center">
                                                 <div className="flex items-center justify-center gap-2 opacity-0 group-hover/hist:opacity-100 transition-all">
-                                                    <button onClick={() => setTasks(tasks.map(t => t.id === task.id ? {...t, completed: false, completedAt: null} : t))} className="p-2 text-slate-400 hover:text-blue-500 hover:bg-blue-50 rounded-lg" title="Mover a pendientes"><RotateCcw size={16} /></button>
-                                                    <button onClick={() => setTasks(tasks.filter(t => t.id !== task.id))} className="p-2 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-lg" title="Eliminar"><Trash2 size={16} /></button>
+                                                    <button onClick={async () => {
+                                                      if (!currentUser) return;
+                                                      const docRef = doc(db, 'users', currentUser.uid, 'tasks', task.id);
+                                                      await updateDoc(docRef, { completed: false, completedAt: null });
+                                                    }} className="p-2 text-slate-400 hover:text-blue-500 hover:bg-blue-50 rounded-lg" title="Mover a pendientes"><RotateCcw size={16} /></button>
+                                                    <button onClick={async () => {
+                                                      if (!currentUser) return;
+                                                      await deleteDoc(doc(db, 'users', currentUser.uid, 'tasks', task.id));
+                                                    }} className="p-2 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-lg" title="Eliminar"><Trash2 size={16} /></button>
                                                 </div>
                                             </td>
                                         </tr>
@@ -1306,7 +1368,7 @@ export default function App() {
                         <div className="space-y-3">
                           <div className="flex justify-between items-center px-1">
                             <h5 className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Tareas</h5>
-                            <button onClick={() => setAddingTaskToNoteId(note.id)} className="text-blue-500 font-bold text-[10px] uppercase hover:underline flex items-center gap-1"><Plus size={12} /> Añadir</button>
+                            <button onClick={() => { setNewNoteTaskTitle(''); setAddingTaskToNoteId(note.id); }} className="text-blue-500 font-bold text-[10px] uppercase hover:underline flex items-center gap-1"><Plus size={12} /> Añadir</button>
                           </div>
                           {addingTaskToNoteId === note.id && (
                             <div className="flex gap-2 p-2 bg-blue-50 rounded-xl border border-blue-100">
@@ -1427,7 +1489,7 @@ export default function App() {
           {/* VISTA BANDEJA DE ENTRADA */}
           {activeTab === 'inbox' && (
             <div className="grid grid-cols-1 lg:grid-cols-5 gap-8 animate-in fade-in duration-500">
-                {/* Columna Izquierda: Captura y Lista */}
+                {/* Columna Izquierda: Captura y Lista */}                
                 <div className="lg:col-span-3 space-y-6">
                     {/* Formulario de captura */}
                     <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm flex gap-3">
@@ -1450,7 +1512,7 @@ export default function App() {
                     </div>
 
                     {/* Lista de items en la bandeja */}
-                    <div className="space-y-3">
+                    <div className="space-y-3">                        
                         {inboxItems.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt)).map(item => (
                             <div 
                               key={item.id} 
@@ -1480,7 +1542,7 @@ export default function App() {
                     </div>
                 </div>
 
-                {/* Columna Derecha: Procesador */}
+                {/* Columna Derecha: Procesador */}                
                 <div className="lg:col-span-2">
                   <div className="sticky top-28">
                     {processingItem ? (
@@ -1512,7 +1574,7 @@ export default function App() {
                           <h4 className="text-xs font-black uppercase tracking-widest text-slate-400 mb-3">Convertir en...</h4>
                           <button onClick={() => setShowTaskAssignment(!showTaskAssignment)} className="w-full flex items-center justify-between text-left p-3 bg-slate-50 hover:bg-blue-50 rounded-xl transition-colors">
                             <span className="text-sm font-bold text-slate-700">Tarea</span><MoveRight size={16} className="text-blue-500"/>
-                          </button>
+                          </button>                          
                           {showTaskAssignment && (
                             <div className="p-4 bg-blue-50 border border-blue-100 rounded-xl space-y-2 animate-in fade-in duration-300">
                               <label className="text-[10px] font-black text-blue-800 uppercase tracking-widest ml-1">Asignar a subcategoría:</label>
@@ -1524,7 +1586,7 @@ export default function App() {
                                   <option value="" disabled>Selecciona una subcategoría...</option>
                                   {subcategoryOptions}
                               </select>
-                              <button onClick={() => processItem('toTask')} disabled={!taskTargetSubId} className="w-full bg-blue-600 text-white py-2 rounded-lg text-xs font-bold hover:bg-blue-700 disabled:opacity-50">Confirmar Tarea</button>
+                              <button onClick={() => processItem('toTask')} disabled={!taskTargetSubId} className="w-full bg-blue-600 text-white py-2 rounded-lg text-xs font-bold hover:bg-blue-700 disabled:opacity-50">Confirmar Tarea</button>                              
                             </div>
                           )}
                           <button onClick={() => processItem('toNote')} className="w-full flex items-center justify-between text-left p-3 bg-slate-50 hover:bg-blue-50 rounded-xl transition-colors"><span className="text-sm font-bold text-slate-700">Anotación</span><MoveRight size={16} className="text-blue-500"/></button>
@@ -1550,7 +1612,7 @@ export default function App() {
             </div>
           )}
 
-          {/* VISTA FINANZAS */}
+          {/* VISTA FINANZAS */}          
           {activeTab === 'finances' && (
             <div className="space-y-8 animate-in fade-in duration-500">
                
@@ -1573,7 +1635,7 @@ export default function App() {
                </div>
 
                {financeTab === 'resumen' ? (
-                 <>
+                 <>                 
                    {/* Header Finanzas (Mes y Resumen) */}
                    <div className="flex justify-between items-center bg-white p-6 rounded-3xl border border-slate-200 shadow-sm">
                       <div>
@@ -1612,7 +1674,7 @@ export default function App() {
                       </div>
                    </div>
 
-                   {/* Tabla de transacciones */}
+                   {/* Tabla de transacciones */}                   
                    <div className="bg-white border border-slate-200 rounded-3xl overflow-hidden shadow-sm">
                       <div className="p-6 border-b border-slate-100 bg-slate-50/50 flex flex-col lg:flex-row lg:items-center justify-between gap-4">
                           <h3 className="text-xs font-black text-slate-400 tracking-widest uppercase">Registro de Movimientos</h3>
@@ -1673,7 +1735,7 @@ export default function App() {
                    </div>
                  </>
                ) : (
-                 /* Pestaña de Configuración de Categorías Financieras */
+                 /* Pestaña de Configuración de Categorías Financieras */                 
                  <div className="space-y-8 animate-in fade-in">
                    <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
                       {['ingreso', 'egreso', 'ahorro'].map(type => {
@@ -1732,7 +1794,7 @@ export default function App() {
                       })}
                    </div>
 
-                   {/* Accesos Rápidos Financieros */}
+                   {/* Accesos Rápidos Financieros */}                   
                    <div className="bg-white border border-slate-200 rounded-3xl overflow-hidden shadow-sm">
                       <div className="p-5 border-b border-slate-100 bg-slate-50 flex items-center justify-between">
                          <h4 className="font-black text-sm uppercase tracking-widest text-slate-700 flex items-center gap-2">
@@ -1803,7 +1865,7 @@ export default function App() {
         </div>
       </main>
 
-      {/* MODALES REUTILIZADOS... */}
+      {/* MODALES REUTILIZADOS... */}      
       {/* MODAL: CONFIRMACIÓN ELIMINACIÓN SUBCATEGORÍA */}
       {subToDelete && (
         <div className="fixed inset-0 bg-slate-900/80 backdrop-blur-md z-[100] flex items-center justify-center p-4">
@@ -1833,7 +1895,7 @@ export default function App() {
         </div>
       )}
 
-      {/* MODAL: CONFIRMACIÓN ELIMINACIÓN ENTIDAD PRINCIPAL */}
+      {/* MODAL: CONFIRMACIÓN ELIMINACIÓN ENTIDAD PRINCIPAL */}      
       {entityToDelete && (
         <div className="fixed inset-0 bg-slate-900/80 backdrop-blur-md z-[100] flex items-center justify-center p-4">
           <div className="bg-white rounded-[2rem] w-full max-w-sm shadow-2xl p-8 space-y-6 animate-in zoom-in-95">
@@ -1862,7 +1924,7 @@ export default function App() {
         </div>
       )}
 
-      {/* MODAL: CREAR / EDITAR ÁREA / CURSO / PROYECTO */}
+      {/* MODAL: CREAR / EDITAR ÁREA / CURSO / PROYECTO */}      
       {isModalOpen && (
         <div className="fixed inset-0 bg-slate-900/70 backdrop-blur-sm z-50 flex items-center justify-center p-4">
           <div className="bg-white rounded-[2rem] w-full max-w-md shadow-2xl p-8 space-y-6 animate-in zoom-in-95">
@@ -1885,7 +1947,7 @@ export default function App() {
         </div>
       )}
 
-      {/* MODAL: FORMULARIO SUBCATEGORIA */}
+      {/* MODAL: FORMULARIO SUBCATEGORIA */}      
       {isSubModalOpen && (
         <div className="fixed inset-0 bg-slate-900/70 backdrop-blur-sm z-50 flex items-center justify-center p-4">
           <div className="bg-white rounded-[2rem] w-full max-w-lg shadow-2xl p-8 space-y-6 animate-in zoom-in-95 overflow-y-auto max-h-[90vh]">
@@ -1909,7 +1971,7 @@ export default function App() {
         </div>
       )}
 
-      {/* MODAL: CREAR TRANSACCIÓN FINANCIERA */}
+      {/* MODAL: CREAR TRANSACCIÓN FINANCIERA */}      
       {isFinanceModalOpen && (
         <div className="fixed inset-0 bg-slate-900/70 backdrop-blur-sm z-50 flex items-center justify-center p-4">
           <div className="bg-white rounded-[2rem] w-full max-w-md shadow-2xl p-8 space-y-6 animate-in zoom-in-95">
@@ -1970,7 +2032,7 @@ export default function App() {
         </div>
       )}
 
-      {/* MODAL: CREAR ANOTACIÓN */}
+      {/* MODAL: CREAR ANOTACIÓN */}      
       {isNoteModalOpen && (
         <div className="fixed inset-0 bg-slate-900/70 backdrop-blur-sm z-50 flex items-center justify-center p-4">
           <div className="bg-white rounded-[2rem] w-full max-w-md shadow-2xl p-8 space-y-6 animate-in zoom-in-95 max-h-[90vh] flex flex-col">
