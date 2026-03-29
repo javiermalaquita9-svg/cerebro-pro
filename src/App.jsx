@@ -17,7 +17,7 @@ import {
 import { useAuth } from './AuthContext';
 import { auth, db } from './firebase';
 import { signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut } from 'firebase/auth';
-import { collection, query, onSnapshot, addDoc, doc, updateDoc, deleteDoc, serverTimestamp } from 'firebase/firestore';
+import { collection, query, onSnapshot, addDoc, doc, updateDoc, deleteDoc, serverTimestamp, setDoc } from 'firebase/firestore';
 
 // --- Constantes Globales ---
 const ICON_MAP = { 
@@ -251,7 +251,7 @@ export default function App() {
   const [financeDateTo, setFinanceDateTo] = useState('2024-05-31');
   
   const [editingCategory, setEditingCategory] = useState(null);
-  const [newCatName, setNewCatName] = useState({ type: '', val: '' });
+  const [newCatName, setNewCatName] = useState({ ingreso: '', egreso: '', ahorro: '' });
 
   // --- Estado de Anotaciones ---
   const [notes, setNotes] = useState([]);
@@ -441,14 +441,15 @@ export default function App() {
   };
 
   const handleAddFinanceCategory = async (type) => {
-    if (!newCatName.val.trim() || newCatName.type !== type || !currentUser) return;
+    const categoryValue = newCatName[type]?.trim();
+    if (!categoryValue || !currentUser) return;
     const financeConfigRef = doc(db, 'users', currentUser.uid, 'finances', 'config');
     const newCategories = {
       ...financeCategories,
-      [type]: [...financeCategories[type], newCatName.val.trim()]
+      [type]: [...financeCategories[type], categoryValue]
     };
-    await updateDoc(financeConfigRef, { categories: newCategories });
-    setNewCatName({ type: '', val: '' });
+    await setDoc(financeConfigRef, { categories: newCategories }, { merge: true });
+    setNewCatName(prev => ({ ...prev, [type]: '' }));
   };
 
   const handleDeleteFinanceCategory = async (type, cat) => {
@@ -458,7 +459,7 @@ export default function App() {
       ...financeCategories,
       [type]: financeCategories[type].filter(c => c !== cat)
     };
-    await updateDoc(financeConfigRef, { categories: newCategories });
+    await setDoc(financeConfigRef, { categories: newCategories }, { merge: true });
   };
 
   const handleSaveEditCategory = async () => {
@@ -468,7 +469,7 @@ export default function App() {
       ...financeCategories,
       [editingCategory.type]: financeCategories[editingCategory.type].map(c => c === editingCategory.oldVal ? editingCategory.newVal.trim() : c)
     };
-    await updateDoc(financeConfigRef, { categories: newCategories });
+    await setDoc(financeConfigRef, { categories: newCategories }, { merge: true });
     // Nota: Actualizar las transacciones existentes que usan esta categoría
     // es una operación más compleja, idealmente manejada con un script de migración
     // o una Cloud Function para garantizar la consistencia de los datos.
@@ -1805,8 +1806,8 @@ export default function App() {
                                        type="text" 
                                        placeholder={`Nueva categoría...`}
                                        className="flex-1 bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs outline-none focus:border-blue-400"
-                                       value={newCatName.type === type ? newCatName.val : ''}
-                                       onChange={e => setNewCatName({ type, val: e.target.value })}
+                                       value={newCatName[type] || ''}
+                                       onChange={e => setNewCatName(prev => ({ ...prev, [type]: e.target.value }))}
                                        onKeyDown={e => e.key === 'Enter' && handleAddFinanceCategory(type)}
                                     />
                                     <button onClick={() => handleAddFinanceCategory(type)} className="bg-slate-900 text-white p-2 rounded-xl hover:bg-slate-800"><Plus size={16}/></button>
@@ -1957,7 +1958,7 @@ export default function App() {
                 <textarea className="w-full p-4 bg-slate-50 border border-slate-200 rounded-xl outline-none text-sm h-24 resize-none" placeholder="Detalles adicionales..." value={newForm.details} onChange={e => setNewForm({...newForm, details: e.target.value})} />
                 <input type="text" className="w-full p-4 bg-slate-50 border border-slate-200 rounded-xl outline-none text-sm" placeholder="Categoría" value={newForm.category} onChange={e => setNewForm({...newForm, category: e.target.value})} />
                 <div className="flex gap-2">
-                    {Object.keys(ICON_MAP).slice(0, 5).map(key => (
+                    {Object.keys(ICON_MAP).slice(0, 8).map(key => (
                         <button key={key} onClick={() => setNewForm({...newForm, icon: key})} className={`p-3 rounded-xl border ${newForm.icon === key ? 'bg-blue-600 text-white border-blue-600' : 'bg-white text-slate-400'}`}><AreaIcon name={key} size={18} /></button>
                     ))}
                 </div>
