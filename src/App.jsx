@@ -3,7 +3,7 @@ import {
   Heart, Briefcase, Wallet, User, Users, Coffee, 
   Target, CheckCircle, Lightbulb, UserCheck, Plus, 
   ChevronRight, Calendar, BarChart2, Layout, List, 
-  Flag, ArrowLeft, Filter, Search, MoreHorizontal,
+  Flag, ArrowLeft, Filter, Search, MoreHorizontal, Menu,
   Flame, Check, Inbox, Rocket, Trash2, X, Info,
   FileText, Clock, PlayCircle, Hash, Edit2,
   TrendingUp, CalendarDays, ChevronDown, Folder, 
@@ -50,6 +50,41 @@ const SidebarButton = ({ icon: Icon, label, active, onClick }) => (
     <Icon size={18} />
     <span className="text-xs font-bold uppercase tracking-tight">{label}</span>
   </button>
+);
+
+const MobileSidebar = ({ isOpen, onClose, activeTab, onTabChange, handleSignOut, userEmail }) => (
+  <div className={`fixed inset-0 z-50 transition-opacity duration-300 md:hidden ${isOpen ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}>
+    {/* Overlay */}
+    <div className="absolute inset-0 bg-slate-900/70" onClick={onClose}></div>
+    
+    {/* Panel */}
+    <div className={`relative h-full w-64 bg-slate-50 p-4 flex flex-col gap-6 shadow-2xl transition-transform duration-300 ${isOpen ? 'translate-x-0' : '-translate-x-full'}`}>
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-2 px-2">
+          <div className="w-8 h-8 bg-slate-900 rounded-lg flex items-center justify-center text-white font-bold italic text-sm">B2</div>
+          <h1 className="font-bold text-slate-900 tracking-tight text-sm uppercase">Cerebro Pro</h1>
+        </div>
+        <button onClick={onClose} className="p-2 text-slate-400 hover:bg-slate-200 rounded-full">
+          <X size={20} />
+        </button>
+      </div>
+
+      <nav className="flex flex-col gap-1">
+        <SidebarButton icon={LayoutGrid} label="Gestión de Áreas" active={activeTab === 'areas'} onClick={() => onTabChange('areas')} />
+        <SidebarButton icon={Rocket} label="Proyectos" active={activeTab === 'projects'} onClick={() => onTabChange('projects')} />
+        <SidebarButton icon={BookOpen} label="Capacitaciones" active={activeTab === 'courses'} onClick={() => onTabChange('courses')} />
+        <SidebarButton icon={Inbox} label="Bandeja de Entrada" active={activeTab === 'inbox'} onClick={() => onTabChange('inbox')} />
+        <SidebarButton icon={FileText} label="Anotaciones" active={activeTab === 'notes'} onClick={() => onTabChange('notes')} />
+        <SidebarButton icon={Wallet} label="Finanzas" active={activeTab === 'finances'} onClick={() => onTabChange('finances')} />
+        <SidebarButton icon={UserCheck} label="Seguimiento de Hábitos" active={activeTab === 'habits'} onClick={() => onTabChange('habits')} />
+      </nav>
+
+      <div className="mt-auto border-t border-slate-200 pt-2">
+        <p className="text-[10px] text-slate-400 font-bold px-4 truncate">{userEmail}</p>
+        <SidebarButton icon={LogOut} label="Cerrar Sesión" active={false} onClick={() => { handleSignOut(); onClose(); }} />
+      </div>
+    </div>
+  </div>
 );
 
 const AreaIcon = ({ name, ...props }) => {
@@ -182,8 +217,9 @@ const LoginScreen = () => {
 // --- Componente Principal ---
 
 export default function App() {
-  const { currentUser } = useAuth();
+  const { currentUser, loading } = useAuth();
   const [activeTab, setActiveTab] = useState('finances'); 
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [selectedParentId, setSelectedParentId] = useState(null);
   const [searchQuery, setSearchQuery] = useState('');
   
@@ -771,6 +807,15 @@ export default function App() {
       });
   };
 
+  if (loading) {
+    // Puedes reemplazar esto con un spinner de carga más elaborado
+    return (
+      <div className="flex h-screen w-screen items-center justify-center bg-slate-50 font-sans text-slate-500">
+        Cargando aplicación...
+      </div>
+    );
+  }
+
   if (!currentUser) {
     return <LoginScreen />;
   }
@@ -778,6 +823,19 @@ export default function App() {
   return (
     <div className="flex h-screen bg-white text-slate-800 font-sans overflow-hidden">
       
+      <MobileSidebar 
+        isOpen={isMobileMenuOpen}
+        onClose={() => setIsMobileMenuOpen(false)}
+        activeTab={activeTab}
+        onTabChange={(tab) => {
+          setActiveTab(tab);
+          setSelectedParentId(null);
+          setIsMobileMenuOpen(false);
+        }}
+        handleSignOut={handleSignOut}
+        userEmail={currentUser.email}
+      />
+
       {/* Sidebar */}
       <aside className="w-64 border-r border-slate-200 bg-slate-50/50 p-4 flex-col gap-6 hidden md:flex">
         <div className="flex items-center gap-2 px-2">
@@ -809,6 +867,11 @@ export default function App() {
       <main className="flex-1 overflow-y-auto relative bg-white">
         <header className="sticky top-0 bg-white/90 backdrop-blur-md z-30 px-8 py-5 flex items-center justify-between border-b border-slate-100">
           <div className="flex items-center gap-6">
+            {/* Hamburger Menu Button - Mobile Only */}
+            <button onClick={() => setIsMobileMenuOpen(true)} className="p-2 -ml-2 text-slate-600 md:hidden">
+              <Menu size={24} />
+            </button>
+
             {selectedParentId && (
               <button onClick={() => setSelectedParentId(null)} className="p-2 hover:bg-slate-100 rounded-full text-slate-400">
                 <ArrowLeft size={20} />
@@ -1120,7 +1183,7 @@ export default function App() {
           {/* VISTA HÁBITOS */}
           {activeTab === 'habits' && (
             <div className="space-y-8 animate-in fade-in duration-500">
-               <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+               <div className="grid grid-cols-2 gap-8">
                     <div className="bg-slate-900 p-6 rounded-3xl text-white shadow-xl flex flex-col justify-center border border-slate-800 space-y-4">
                         <h4 className="text-[10px] font-black uppercase text-slate-500 tracking-widest">Nuevo Hábito</h4>
                         <div className="flex flex-col gap-3">
