@@ -508,7 +508,14 @@ export default function App() {
       subscribe('notes', setNotes, (docData) => ({
         ...docData,
         createdAt: docData.createdAt?.toDate().toISOString(),
-        tasks: (docData.tasks || []).map(t => ({ ...t, completedAt: t.completedAt?.toDate()?.toISOString() || null }))
+        tasks: (docData.tasks || []).map(t => {
+          const completedAt = t.completedAt;
+          // Comprueba si completedAt es un Timestamp de Firestore antes de convertirlo.
+          const completedAtISO = (completedAt && typeof completedAt.toDate === 'function')
+            ? completedAt.toDate().toISOString()
+            : completedAt; // Si no, lo deja como está (probablemente ya es un string o null).
+          return { ...t, completedAt: completedAtISO || null };
+        })
       }));
 
       // Bandeja de Entrada
@@ -804,8 +811,13 @@ export default function App() {
         archived: false,
         tasks: newNoteTasks
     };
-    await addDoc(notesCollectionRef, newNote);
-    closeNewNoteModal();
+    try {
+      await addDoc(notesCollectionRef, newNote);
+      closeNewNoteModal();
+    } catch (error) {
+      console.error("Error al crear la anotación:", error);
+      // Opcional: Mostrar un mensaje de error al usuario
+    }
   };
 
   const handleAddTaskToNewNote = () => {
@@ -818,7 +830,7 @@ export default function App() {
     setNewNoteTasks(newNoteTasks.filter(t => t.id !== taskId));
   };
 
-  const toggleNoteTask = async (noteId, taskId) => {
+ const toggleNoteTask = async (noteId, taskId) => {
     if (!currentUser) return;
     const noteDocRef = doc(db, 'users', currentUser.uid, 'notes', noteId);
     const note = notes.find(n => n.id === noteId);
@@ -827,7 +839,8 @@ export default function App() {
     const updatedTasks = note.tasks.map(t => {
       if (t.id === taskId) {
         const isNowCompleted = !t.completed;
-        return { ...t, completed: isNowCompleted, completedAt: isNowCompleted ? serverTimestamp() : null };
+        // 👇 AQUÍ ESTÁ EL CAMBIO (Adiós serverTimestamp)
+        return { ...t, completed: isNowCompleted, completedAt: isNowCompleted ? new Date().toISOString() : null };
       }
       return t;
     });
