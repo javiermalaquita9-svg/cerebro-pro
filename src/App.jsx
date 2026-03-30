@@ -822,7 +822,7 @@ export default function App() {
     const updatedTasks = note.tasks.map(t => {
       if (t.id === taskId) {
         const isNowCompleted = !t.completed;
-        return { ...t, completed: isNowCompleted, completedAt: isNowCompleted ? serverTimestamp() : null };
+        return { ...t, completed: isNowCompleted, completedAt: isNowCompleted ? new Date() : null };
       }
       return t;
     });
