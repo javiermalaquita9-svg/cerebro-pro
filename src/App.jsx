@@ -1,11 +1,11 @@
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { 
   Heart, Briefcase, Wallet, User, Users, Coffee, 
   Target, CheckCircle, Lightbulb, UserCheck, Plus, 
-  ChevronRight, Calendar, BarChart2, Layout, List, 
+  ChevronRight, Calendar, BarChart2, Layout, List, Star,
   Flag, ArrowLeft, Filter, Search, MoreHorizontal, Menu,
   Flame, Check, Inbox, Rocket, Trash2, X, Info,
-  FileText, Clock, PlayCircle, Hash, Edit2,
+  FileText, Clock, PlayCircle, Hash, Edit2, 
   TrendingUp, CalendarDays, ChevronDown, Folder, 
   File, Paperclip, MoreVertical, LayoutGrid, Quote, Timer, ShoppingBag,
   Calculator,
@@ -52,6 +52,38 @@ const SidebarButton = ({ icon: Icon, label, active, onClick }) => (
   </button>
 );
 
+const StarRatingInput = ({ rating, setRating, label }) => (
+  <div className="space-y-2">
+    <label className="text-xs font-bold text-slate-500">{label}</label>
+    <div className="flex gap-1">
+      {[1, 2, 3, 4, 5].map((star) => (
+        <button
+          key={star}
+          type="button"
+          onClick={() => setRating(star)}
+          className="p-1 text-slate-300 hover:text-amber-400 transition-colors"
+        >
+          <Star
+            size={24}
+            className={`transition-all ${rating >= star ? 'text-amber-400 fill-amber-400' : ''}`}
+          />
+        </button>
+      ))}
+    </div>
+  </div>
+);
+
+const StarRatingDisplay = ({ rating, label }) => (
+  <div>
+    <h4 className="font-bold text-slate-500 text-xs uppercase mb-1">{label}</h4>
+    <div className="flex gap-0.5">
+      {[1, 2, 3, 4, 5].map((star) => (
+        <Star key={star} size={14} className={`transition-all ${rating >= star ? 'text-amber-400 fill-amber-400' : 'text-slate-200'}`} />
+      ))}
+    </div>
+  </div>
+);
+
 const MobileSidebar = ({ isOpen, onClose, activeTab, onTabChange, handleSignOut, userEmail }) => (
   <div className={`fixed inset-0 z-50 transition-opacity duration-300 md:hidden ${isOpen ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}>
     {/* Overlay */}
@@ -70,13 +102,14 @@ const MobileSidebar = ({ isOpen, onClose, activeTab, onTabChange, handleSignOut,
       </div>
 
       <nav className="flex flex-col gap-1">
+        <SidebarButton icon={Inbox} label="Bandeja de Entrada" active={activeTab === 'inbox'} onClick={() => onTabChange('inbox')} />
         <SidebarButton icon={LayoutGrid} label="Gestión de Áreas" active={activeTab === 'areas'} onClick={() => onTabChange('areas')} />
+        <SidebarButton icon={FileText} label="Anotaciones" active={activeTab === 'notes'} onClick={() => onTabChange('notes')} />
         <SidebarButton icon={Rocket} label="Proyectos" active={activeTab === 'projects'} onClick={() => onTabChange('projects')} />
         <SidebarButton icon={BookOpen} label="Capacitaciones" active={activeTab === 'courses'} onClick={() => onTabChange('courses')} />
-        <SidebarButton icon={Inbox} label="Bandeja de Entrada" active={activeTab === 'inbox'} onClick={() => onTabChange('inbox')} />
-        <SidebarButton icon={FileText} label="Anotaciones" active={activeTab === 'notes'} onClick={() => onTabChange('notes')} />
         <SidebarButton icon={Wallet} label="Finanzas" active={activeTab === 'finances'} onClick={() => onTabChange('finances')} />
         <SidebarButton icon={UserCheck} label="Seguimiento de Hábitos" active={activeTab === 'habits'} onClick={() => onTabChange('habits')} />
+        <SidebarButton icon={Archive} label="Reportes" active={activeTab === 'reports'} onClick={() => onTabChange('reports')} />
       </nav>
 
       <div className="mt-auto border-t border-slate-200 pt-2">
@@ -159,6 +192,103 @@ const LineChart = ({ data, weekDates }) => {
   );
 };
 
+const generateCalendarDays = (year) => {
+  const days = [];
+  const startDate = new Date(year, 0, 1);
+  const endDate = new Date(year, 11, 31);
+
+  let startDayOfWeek = startDate.getDay();
+  startDayOfWeek = startDayOfWeek === 0 ? 6 : startDayOfWeek - 1; // Lunes = 0
+
+  // Añadir placeholders para alinear el primer día del año al Lunes
+  for (let i = 0; i < startDayOfWeek; i++) {
+    days.push({ key: `placeholder-start-${i}`, isPlaceholder: true });
+  }
+
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+
+  for (let d = new Date(startDate); d <= endDate; d.setDate(d.getDate() + 1)) {
+    const isToday = d.getTime() === today.getTime();
+    days.push({
+      key: d.toISOString(),
+      date: new Date(d),
+      dayOfMonth: d.getDate(),
+      isToday,
+      isPlaceholder: false,
+    });
+  }
+
+  // Añadir placeholders para completar la última semana
+  let endDayOfWeek = endDate.getDay();
+  endDayOfWeek = endDayOfWeek === 0 ? 6 : endDayOfWeek - 1; // Lunes = 0
+  const daysToAdd = (6 - endDayOfWeek);
+  for (let i = 0; i < daysToAdd; i++) {
+    days.push({ key: `placeholder-end-${i}`, isPlaceholder: true });
+  }
+
+  return days;
+};
+
+const ContinuousCalendar = ({ days, markedDays, onToggleDay }) => {
+  const todayRef = useRef(null);
+
+  useEffect(() => {
+    if (todayRef.current) {
+      todayRef.current.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+  }, []);
+
+  const weeks = [];
+  for (let i = 0; i < days.length; i += 7) {
+    weeks.push(days.slice(i, i + 7));
+  }
+
+  return (
+    <div className="bg-slate-50/70 border border-slate-100 rounded-3xl p-3 shadow-sm">
+      <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest mb-3 px-1">Calendario de Actividad</h3>
+        <div className="grid grid-cols-[auto_repeat(7,1fr)] gap-0.5 text-center">
+        {/* Header */}
+        <div /> {/* Empty cell for week number column header */}
+        {['L', 'M', 'X', 'J', 'V', 'S', 'D'].map(day => (
+          <div key={day} className="text-[9px] font-black text-slate-400 uppercase p-0.5">
+            {day}
+          </div>
+        ))}
+
+        {/* Calendar Body */}
+        {weeks.map((week, weekIndex) => (
+          <React.Fragment key={weekIndex}>
+            <div className="text-[9px] font-bold text-slate-300 flex items-center justify-center pr-0.5">
+              <span className="transform -rotate-90 whitespace-nowrap opacity-60">
+                Sem {weekIndex + 1}
+              </span>
+            </div>
+            {week.map(day => (
+              day.isPlaceholder ? 
+                <div key={day.key} className="w-full aspect-square"></div> :
+                <button
+                  key={day.key} 
+                  ref={day.isToday ? todayRef : null} 
+                  onClick={() => onToggleDay(day.key)}
+                  className={`w-full aspect-square flex items-center justify-center rounded-md transition-all text-[10px] font-bold ${
+                    markedDays.includes(day.key)
+                      ? 'bg-slate-800 text-white'
+                      : day.isToday 
+                      ? 'bg-blue-600 text-white shadow-lg'
+                      : 'bg-slate-100 hover:bg-blue-100 text-slate-500'
+                  }`}
+                >
+                  {day.dayOfMonth}
+                </button>
+            ))}
+          </React.Fragment>
+        ))}
+        </div>
+    </div>
+  );
+};
+
 // --- Componente de Login ---
 const LoginScreen = () => {
   const [email, setEmail] = useState('');
@@ -218,7 +348,7 @@ const LoginScreen = () => {
 
 export default function App() {
   const { currentUser, loading } = useAuth();
-  const [activeTab, setActiveTab] = useState('finances'); 
+  const [activeTab, setActiveTab] = useState('inbox'); 
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [selectedParentId, setSelectedParentId] = useState(null);
   const [searchQuery, setSearchQuery] = useState('');  
@@ -318,6 +448,24 @@ export default function App() {
   const [newResForm, setNewResForm] = useState({ title: '', url: '', type: 'video' });
   const [dateFrom, setDateFrom] = useState('2024-05-13');
   
+  // --- Estado de Reportes ---
+  const [markedDays, setMarkedDays] = useState([]);
+  // Genera los días del calendario para el año actual
+  const calendarDays = useMemo(() => generateCalendarDays(2026), []);
+
+  const [reports, setReports] = useState([]);
+  const [isReportModalOpen, setIsReportModalOpen] = useState(false);
+  const [editingReportId, setEditingReportId] = useState(null);
+  const [newReport, setNewReport] = useState({
+    month: '',
+    feelings: '',
+    achievements: '',
+    difficulties: '',
+    link: '',
+    rating_general: 0,
+    rating_logros: 0,
+    rating_dificultades: 0,
+  });
   useEffect(() => {
     // Si todavía estamos verificando el estado de autenticación, no hacemos nada.
     // Esta es la corrección clave para evitar la limpieza de datos al recargar.
@@ -337,6 +485,8 @@ export default function App() {
       setFinanceCategories({ ingreso: [], egreso: [], ahorro: [] });
       setFinanceLinks([]);
       setTransactions([]);
+      setMarkedDays([]);
+      setReports([]);
       setWishlistItems([]);
       return;
     }
@@ -393,6 +543,22 @@ export default function App() {
 
       // Lista de Deseos
       subscribe('wishlist', setWishlistItems);
+
+      // Reportes
+      subscribe('reports', setReports, (docData) => ({
+        ...docData,
+        createdAt: docData.createdAt?.toDate().toISOString()
+      }));
+
+      // Días Marcados del Calendario
+      const markedDaysRef = doc(db, 'users', currentUser.uid, 'calendar', 'markedDays');
+      unsubscribes.push(onSnapshot(markedDaysRef, (doc) => {
+        if (doc.exists()) {
+          setMarkedDays(doc.data().dates || []);
+        } else {
+          setMarkedDays([]);
+        }
+      }));
 
       // Categorías Financieras (documento único)
       const financeConfigRef = doc(db, 'users', currentUser.uid, 'finances', 'config');
@@ -908,6 +1074,71 @@ export default function App() {
     await deleteDoc(doc(db, 'users', currentUser.uid, 'habits', id));
   };
 
+  // --- Lógica de Calendario ---
+  const handleToggleDay = async (dayKey) => {
+    if (!currentUser) return;
+    const newMarkedDays = markedDays.includes(dayKey)
+      ? markedDays.filter(d => d !== dayKey)
+      : [...markedDays, dayKey];
+    
+    setMarkedDays(newMarkedDays); // Optimistic update
+
+    const markedDaysRef = doc(db, 'users', currentUser.uid, 'calendar', 'markedDays');
+    await setDoc(markedDaysRef, { dates: newMarkedDays });
+  };
+
+  // --- Lógica de Reportes ---
+  const handleOpenReportModal = (report = null) => {
+    if (report) {
+      setEditingReportId(report.id);
+      setNewReport({
+        month: report.month || '',
+        feelings: report.feelings || '',
+        achievements: report.achievements || '',
+        difficulties: report.difficulties || '',
+        link: report.link || '',
+        rating_general: report.rating_general || 0,
+        rating_logros: report.rating_logros || 0,
+        rating_dificultades: report.rating_dificultades || 0,
+      });
+    } else {
+      setEditingReportId(null);
+      setNewReport({
+        month: new Date().toLocaleString('es-ES', { month: 'long', year: 'numeric' }),
+        feelings: '',
+        achievements: '',
+        difficulties: '',
+        link: '',
+        rating_general: 0,
+        rating_logros: 0,
+        rating_dificultades: 0,
+      });
+    }
+    setIsReportModalOpen(true);
+  };
+
+  const handleCloseReportModal = () => {
+    setIsReportModalOpen(false);
+    setEditingReportId(null);
+    setNewReport({ month: '', feelings: '', achievements: '', difficulties: '', link: '', rating_general: 0, rating_logros: 0, rating_dificultades: 0 });
+  };
+
+  const handleSaveReport = async () => {
+    if (!newReport.month.trim() || !currentUser) return;
+    const reportData = { ...newReport };
+    if (editingReportId) {
+      await updateDoc(doc(db, 'users', currentUser.uid, 'reports', editingReportId), reportData);
+    } else {
+      await addDoc(collection(db, 'users', currentUser.uid, 'reports'), { ...reportData, createdAt: serverTimestamp() });
+    }
+    handleCloseReportModal();
+  };
+
+  const handleDeleteReport = async (id) => {
+    if (!currentUser) return;
+    await deleteDoc(doc(db, 'users', currentUser.uid, 'reports', id));
+  };
+
   // --- Memos y Filtros ---
   const activeParent = mainEntities.find(e => e.id === selectedParentId);
   
@@ -1027,13 +1258,14 @@ export default function App() {
         </div>
 
         <nav className="flex flex-col gap-1">
+          <SidebarButton icon={Inbox} label="Bandeja de Entrada" active={activeTab === 'inbox'} onClick={() => { setActiveTab('inbox'); setSelectedParentId(null); }} />
           <SidebarButton icon={LayoutGrid} label="Gestión de Áreas" active={activeTab === 'areas'} onClick={() => { setActiveTab('areas'); setSelectedParentId(null); }} />
+          <SidebarButton icon={FileText} label="Anotaciones" active={activeTab === 'notes'} onClick={() => { setActiveTab('notes'); setSelectedParentId(null); }} />
           <SidebarButton icon={Rocket} label="Proyectos" active={activeTab === 'projects'} onClick={() => { setActiveTab('projects'); setSelectedParentId(null); }} />
           <SidebarButton icon={BookOpen} label="Capacitaciones" active={activeTab === 'courses'} onClick={() => { setActiveTab('courses'); setSelectedParentId(null); }} />
-          <SidebarButton icon={Inbox} label="Bandeja de Entrada" active={activeTab === 'inbox'} onClick={() => { setActiveTab('inbox'); setSelectedParentId(null); }} />
-          <SidebarButton icon={FileText} label="Anotaciones" active={activeTab === 'notes'} onClick={() => { setActiveTab('notes'); setSelectedParentId(null); }} />
           <SidebarButton icon={Wallet} label="Finanzas" active={activeTab === 'finances'} onClick={() => { setActiveTab('finances'); setSelectedParentId(null); }} />
           <SidebarButton icon={UserCheck} label="Seguimiento de Hábitos" active={activeTab === 'habits'} onClick={() => { setActiveTab('habits'); setSelectedParentId(null); }} />
+          <SidebarButton icon={Archive} label="Reportes" active={activeTab === 'reports'} onClick={() => { setActiveTab('reports'); setSelectedParentId(null); }} />
         </nav>
 
         <div className="mt-auto px-4 py-5 bg-blue-600 rounded-3xl text-white shadow-xl">
@@ -1066,6 +1298,7 @@ export default function App() {
                activeTab === 'inbox' ? 'Bandeja de Entrada' :
                activeTab === 'notes' ? 'Anotaciones' :
                activeParent ? activeParent.title : 
+               activeTab === 'reports' ? 'Reportes Mensuales' :
                activeTab === 'areas' ? 'Gestión de Áreas' : 
                activeTab === 'projects' ? 'Mis Proyectos' :
                'Capacitaciones'}
@@ -1098,6 +1331,11 @@ export default function App() {
           </div>
 
           <div className="flex gap-3">
+             {activeTab === 'reports' && (
+                <button onClick={() => handleOpenReportModal()} className="bg-slate-900 text-white px-5 py-2 rounded-xl text-xs font-bold hover:bg-slate-800 transition-all flex items-center gap-2 shadow-lg">
+                  <Plus size={16} /> Agregar Reporte
+                </button>
+             )}
              {activeTab === 'notes' && !selectedParentId && (
                 <button onClick={openNewNoteModal} className="bg-slate-900 text-white px-5 py-2 rounded-xl text-xs font-bold hover:bg-slate-800 transition-all flex items-center gap-2 shadow-lg">
                   <Plus size={16} /> Nueva Anotación
@@ -1465,6 +1703,49 @@ export default function App() {
             </div>
           )}
 
+          {/* VISTA REPORTES */}
+          {activeTab === 'reports' && (
+            <div className="space-y-8 animate-in fade-in duration-500">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {reports.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt)).map(report => (
+                  <div key={report.id} className="bg-white border border-slate-200 rounded-3xl p-6 flex flex-col group">
+                    <div className="flex justify-between items-start mb-4">
+                      <div>
+                        <h3 className="font-black text-lg text-slate-800">{report.month}</h3>
+                        <p className="text-xs text-slate-400 font-bold">{formatDateTime(report.createdAt)}</p>
+                      </div>
+                      <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <button onClick={() => handleOpenReportModal(report)} className="p-2 text-slate-400 hover:text-blue-500 hover:bg-blue-50 rounded-lg"><Edit2 size={14} /></button>
+                        <button onClick={() => handleDeleteReport(report.id)} className="p-2 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-lg"><Trash2 size={14} /></button>
+                      </div>
+                    </div>
+                    
+                    <div className="grid grid-cols-3 gap-4 text-sm text-slate-600 flex-1 mb-4">
+                      <StarRatingDisplay rating={report.rating_general || 0} label="General" />
+                      <StarRatingDisplay rating={report.rating_logros || 0} label="Logros" />
+                      <StarRatingDisplay rating={report.rating_dificultades || 0} label="Dificultades" />
+                    </div>
+
+                    {report.link && (
+                      <div className="mt-4 pt-4 border-t border-slate-100">
+                        <a href={report.link} target="_blank" rel="noreferrer" className="flex items-center gap-2 text-xs font-bold text-blue-600 hover:underline">
+                          <LinkIcon size={14} /> Ver reporte en Google Docs
+                        </a>
+                      </div>
+                    )}
+                  </div>
+                ))}
+                {reports.length === 0 && (
+                  <div className="col-span-full text-center p-16 bg-slate-50 rounded-3xl border border-dashed border-slate-200">
+                    <div className="w-16 h-16 bg-white rounded-full flex items-center justify-center mx-auto mb-4"><Archive className="text-slate-300" size={32} /></div>
+                    <h3 className="font-bold text-slate-700">No hay reportes</h3>
+                    <p className="text-sm text-slate-500 mt-2">Crea tu primer reporte mensual para empezar a documentar tu progreso.</p>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
           {/* VISTA ANOTACIONES */}
           {activeTab === 'notes' && (
             <div className="space-y-8 animate-in fade-in duration-500">
@@ -1625,7 +1906,7 @@ export default function App() {
           {activeTab === 'inbox' && (
             <div className="grid grid-cols-1 lg:grid-cols-5 gap-8 animate-in fade-in duration-500">
                 {/* Columna Izquierda: Captura y Lista */}                
-                <div className="lg:col-span-3 space-y-6">
+                <div className="lg:col-span-3 space-y-8">
                     {/* Formulario de captura */}
                     <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm flex gap-3">
                       <input
@@ -1644,6 +1925,72 @@ export default function App() {
                       >
                         <Plus size={14} /> Capturar
                       </button>
+                    </div>
+                    
+                    {/* Procesador de Items */}
+                    <div>
+                      {processingItem ? (
+                        <div className="bg-white p-6 rounded-3xl border border-slate-200 shadow-lg space-y-6 animate-in fade-in duration-300">
+                          <div>
+                            <h3 className="text-xs font-black uppercase tracking-widest text-slate-400 mb-2">Procesando</h3>
+                            {isEditingInboxItem ? (
+                              <div className="space-y-2">
+                                <textarea 
+                                  className="w-full p-2 bg-slate-100 border border-slate-200 rounded-lg text-sm font-medium text-slate-700 outline-none focus:border-blue-500 resize-y"
+                                  value={editedInboxItemText}
+                                  onChange={(e) => setEditedInboxItemText(e.target.value)}
+                                  autoFocus
+                                />
+                                <div className="flex gap-2">
+                                  <button onClick={handleUpdateInboxItemText} className="flex-1 bg-emerald-500 text-white py-2 rounded-lg text-xs font-bold">Guardar</button>
+                                  <button onClick={() => setIsEditingInboxItem(false)} className="flex-1 bg-slate-200 text-slate-600 py-2 rounded-lg text-xs font-bold">Cancelar</button>
+                                </div>
+                              </div>
+                            ) : (
+                              <div className="flex justify-between items-start gap-2">
+                                <p className="text-base font-medium text-slate-700 italic flex-1">"{processingItem.text}"</p>
+                                <button onClick={() => { setIsEditingInboxItem(true); setEditedInboxItemText(processingItem.text); }} className="p-2 text-slate-400 hover:text-blue-500 hover:bg-blue-50 rounded-lg"><Edit2 size={14}/></button>
+                              </div>
+                            )}
+                          </div>
+
+                          <div className="space-y-2 pt-6 border-t border-slate-100">
+                            <h4 className="text-xs font-black uppercase tracking-widest text-slate-400 mb-3">Convertir en...</h4>
+                            <button onClick={() => setShowTaskAssignment(!showTaskAssignment)} className="w-full flex items-center justify-between text-left p-3 bg-slate-50 hover:bg-blue-50 rounded-xl transition-colors">
+                              <span className="text-sm font-bold text-slate-700">Tarea</span><MoveRight size={16} className="text-blue-500"/>
+                            </button>                          
+                            {showTaskAssignment && (
+                              <div className="p-4 bg-blue-50 border border-blue-100 rounded-xl space-y-2 animate-in fade-in duration-300">
+                                <label className="text-[10px] font-black text-blue-800 uppercase tracking-widest ml-1">Asignar a subcategoría:</label>
+                                <select
+                                    className="w-full p-3 bg-white border border-blue-200 rounded-xl outline-none text-sm font-bold cursor-pointer"
+                                    value={taskTargetSubId}
+                                    onChange={e => setTaskTargetSubId(e.target.value)}
+                                >
+                                    <option value="" disabled>Selecciona una subcategoría...</option>
+                                    {subcategoryOptions}
+                                </select>
+                                <button onClick={() => processItem('toTask')} disabled={!taskTargetSubId} className="w-full bg-blue-600 text-white py-2 rounded-lg text-xs font-bold hover:bg-blue-700 disabled:opacity-50">Confirmar Tarea</button>                              
+                              </div>
+                            )}
+                            <button onClick={() => processItem('toNote')} className="w-full flex items-center justify-between text-left p-3 bg-slate-50 hover:bg-blue-50 rounded-xl transition-colors"><span className="text-sm font-bold text-slate-700">Anotación</span><MoveRight size={16} className="text-blue-500"/></button>
+                            <button onClick={() => processItem('toHabit')} className="w-full flex items-center justify-between text-left p-3 bg-slate-50 hover:bg-blue-50 rounded-xl transition-colors"><span className="text-sm font-bold text-slate-700">Hábito</span><MoveRight size={16} className="text-blue-500"/></button>
+                            <div className="flex gap-2 pt-2">
+                              <button onClick={() => processItem('toArea')} className="flex-1 text-center p-2 bg-slate-100 hover:bg-slate-200 rounded-xl text-xs font-bold text-slate-600 transition-colors">Área</button>
+                              <button onClick={() => processItem('toProject')} className="flex-1 text-center p-2 bg-slate-100 hover:bg-slate-200 rounded-xl text-xs font-bold text-slate-600 transition-colors">Proyecto</button>
+                              <button onClick={() => processItem('toCourse')} className="flex-1 text-center p-2 bg-slate-100 hover:bg-slate-200 rounded-xl text-xs font-bold text-slate-600 transition-colors">Curso</button>
+                            </div>
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="text-center p-10 bg-slate-50/70 rounded-3xl border-2 border-dashed border-slate-200">
+                            <div className="w-16 h-16 bg-white rounded-full flex items-center justify-center mx-auto mb-4">
+                                <MoveRight className="text-slate-300" size={32} />
+                            </div>
+                            <h3 className="font-bold text-slate-600">Procesa tu bandeja</h3>
+                            <p className="text-sm text-slate-400 mt-2">Selecciona un elemento de la izquierda para decidir qué hacer con él.</p>
+                        </div>
+                      )}
                     </div>
 
                     {/* Lista de items en la bandeja */}
@@ -1678,71 +2025,8 @@ export default function App() {
                 </div>
 
                 {/* Columna Derecha: Procesador */}                
-                <div className="lg:col-span-2">
-                  <div className="sticky top-28">
-                    {processingItem ? (
-                      <div className="bg-white p-6 rounded-3xl border border-slate-200 shadow-lg space-y-6 animate-in fade-in duration-300">
-                        <div>
-                          <h3 className="text-xs font-black uppercase tracking-widest text-slate-400 mb-2">Procesando</h3>
-                          {isEditingInboxItem ? (
-                            <div className="space-y-2">
-                              <textarea 
-                                className="w-full p-2 bg-slate-100 border border-slate-200 rounded-lg text-sm font-medium text-slate-700 outline-none focus:border-blue-500 resize-y"
-                                value={editedInboxItemText}
-                                onChange={(e) => setEditedInboxItemText(e.target.value)}
-                                autoFocus
-                              />
-                              <div className="flex gap-2">
-                                <button onClick={handleUpdateInboxItemText} className="flex-1 bg-emerald-500 text-white py-2 rounded-lg text-xs font-bold">Guardar</button>
-                                <button onClick={() => setIsEditingInboxItem(false)} className="flex-1 bg-slate-200 text-slate-600 py-2 rounded-lg text-xs font-bold">Cancelar</button>
-                              </div>
-                            </div>
-                          ) : (
-                            <div className="flex justify-between items-start gap-2">
-                              <p className="text-base font-medium text-slate-700 italic flex-1">"{processingItem.text}"</p>
-                              <button onClick={() => { setIsEditingInboxItem(true); setEditedInboxItemText(processingItem.text); }} className="p-2 text-slate-400 hover:text-blue-500 hover:bg-blue-50 rounded-lg"><Edit2 size={14}/></button>
-                            </div>
-                          )}
-                        </div>
-
-                        <div className="space-y-2 pt-6 border-t border-slate-100">
-                          <h4 className="text-xs font-black uppercase tracking-widest text-slate-400 mb-3">Convertir en...</h4>
-                          <button onClick={() => setShowTaskAssignment(!showTaskAssignment)} className="w-full flex items-center justify-between text-left p-3 bg-slate-50 hover:bg-blue-50 rounded-xl transition-colors">
-                            <span className="text-sm font-bold text-slate-700">Tarea</span><MoveRight size={16} className="text-blue-500"/>
-                          </button>                          
-                          {showTaskAssignment && (
-                            <div className="p-4 bg-blue-50 border border-blue-100 rounded-xl space-y-2 animate-in fade-in duration-300">
-                              <label className="text-[10px] font-black text-blue-800 uppercase tracking-widest ml-1">Asignar a subcategoría:</label>
-                              <select
-                                  className="w-full p-3 bg-white border border-blue-200 rounded-xl outline-none text-sm font-bold cursor-pointer"
-                                  value={taskTargetSubId}
-                                  onChange={e => setTaskTargetSubId(e.target.value)}
-                              >
-                                  <option value="" disabled>Selecciona una subcategoría...</option>
-                                  {subcategoryOptions}
-                              </select>
-                              <button onClick={() => processItem('toTask')} disabled={!taskTargetSubId} className="w-full bg-blue-600 text-white py-2 rounded-lg text-xs font-bold hover:bg-blue-700 disabled:opacity-50">Confirmar Tarea</button>                              
-                            </div>
-                          )}
-                          <button onClick={() => processItem('toNote')} className="w-full flex items-center justify-between text-left p-3 bg-slate-50 hover:bg-blue-50 rounded-xl transition-colors"><span className="text-sm font-bold text-slate-700">Anotación</span><MoveRight size={16} className="text-blue-500"/></button>
-                          <button onClick={() => processItem('toHabit')} className="w-full flex items-center justify-between text-left p-3 bg-slate-50 hover:bg-blue-50 rounded-xl transition-colors"><span className="text-sm font-bold text-slate-700">Hábito</span><MoveRight size={16} className="text-blue-500"/></button>
-                          <div className="flex gap-2 pt-2">
-                            <button onClick={() => processItem('toArea')} className="flex-1 text-center p-2 bg-slate-100 hover:bg-slate-200 rounded-xl text-xs font-bold text-slate-600 transition-colors">Área</button>
-                            <button onClick={() => processItem('toProject')} className="flex-1 text-center p-2 bg-slate-100 hover:bg-slate-200 rounded-xl text-xs font-bold text-slate-600 transition-colors">Proyecto</button>
-                            <button onClick={() => processItem('toCourse')} className="flex-1 text-center p-2 bg-slate-100 hover:bg-slate-200 rounded-xl text-xs font-bold text-slate-600 transition-colors">Curso</button>
-                          </div>
-                        </div>
-                      </div>
-                    ) : (
-                      <div className="text-center p-10 bg-slate-50/70 rounded-3xl border-2 border-dashed border-slate-200">
-                          <div className="w-16 h-16 bg-white rounded-full flex items-center justify-center mx-auto mb-4">
-                              <MoveRight className="text-slate-300" size={32} />
-                          </div>
-                          <h3 className="font-bold text-slate-600">Procesa tu bandeja</h3>
-                          <p className="text-sm text-slate-400 mt-2">Selecciona un elemento de la izquierda para decidir qué hacer con él.</p>
-                      </div>
-                    )}
-                  </div>
+                <div className="lg:col-span-2 space-y-8 sticky top-28">
+                  <ContinuousCalendar days={calendarDays} markedDays={markedDays} onToggleDay={handleToggleDay} />
                 </div>
             </div>
           )}
@@ -2358,6 +2642,81 @@ export default function App() {
             <div className="flex gap-3 pt-4 border-t border-slate-100">
               <button onClick={closeNewNoteModal} className="flex-1 py-4 font-black text-slate-400 text-xs uppercase tracking-widest">Cancelar</button>
               <button onClick={handleAddNote} className="flex-1 py-4 bg-blue-600 text-white font-black text-xs uppercase rounded-2xl shadow-lg hover:bg-blue-700 disabled:opacity-50" disabled={!newNoteTitle.trim()}>CREAR</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL: CREAR/EDITAR REPORTE */}
+      {isReportModalOpen && (
+        <div className="fixed inset-0 bg-slate-900/70 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-[2rem] w-full max-w-lg shadow-2xl p-8 space-y-6 animate-in zoom-in-95 max-h-[90vh] flex flex-col">
+            <h3 className="font-black text-xl tracking-tight">{editingReportId ? 'Editar Reporte' : 'Nuevo Reporte Mensual'}</h3>
+            <div className="space-y-4 flex-1 overflow-y-auto pr-2 -mr-2">
+              <input 
+                type="text" 
+                className="w-full p-4 bg-slate-50 border border-slate-200 rounded-2xl outline-none focus:border-blue-500 font-bold" 
+                placeholder="Mes y Año (ej: Mayo 2024)" 
+                value={newReport.month} 
+                onChange={e => setNewReport({...newReport, month: e.target.value})}
+              />
+              <div className="space-y-6 pt-6 border-t border-slate-100">
+                <div className="space-y-3">
+                  <h4 className="text-sm font-bold text-slate-700">Sensaciones Generales</h4>
+                  <StarRatingInput
+                    label="Evaluación General del Mes"
+                    rating={newReport.rating_general}
+                    setRating={(r) => setNewReport({ ...newReport, rating_general: r })}
+                  />
+                  <textarea 
+                    className="w-full p-4 bg-slate-50 border border-slate-200 rounded-xl outline-none text-sm h-24 resize-none" 
+                    placeholder="¿Cómo te sentiste este mes? (Energía, motivación, etc.)" 
+                    value={newReport.feelings} 
+                    onChange={e => setNewReport({...newReport, feelings: e.target.value})}
+                  />
+                </div>
+                <div className="space-y-3">
+                  <h4 className="text-sm font-bold text-slate-700">Logros y Avances</h4>
+                  <StarRatingInput
+                    label="Evaluación de Logros"
+                    rating={newReport.rating_logros}
+                    setRating={(r) => setNewReport({ ...newReport, rating_logros: r })}
+                  />
+                  <textarea 
+                    className="w-full p-4 bg-slate-50 border border-slate-200 rounded-xl outline-none text-sm h-24 resize-none" 
+                    placeholder="Logros y avances significativos..." 
+                    value={newReport.achievements} 
+                    onChange={e => setNewReport({...newReport, achievements: e.target.value})}
+                  />
+                </div>
+                <div className="space-y-3">
+                  <h4 className="text-sm font-bold text-slate-700">Dificultades y Aprendizajes</h4>
+                  <StarRatingInput
+                    label="Manejo de Dificultades"
+                    rating={newReport.rating_dificultades}
+                    setRating={(r) => setNewReport({ ...newReport, rating_dificultades: r })}
+                  />
+                  <textarea 
+                    className="w-full p-4 bg-slate-50 border border-slate-200 rounded-xl outline-none text-sm h-24 resize-none" 
+                    placeholder="Dificultades y áreas de mejora..." 
+                    value={newReport.difficulties} 
+                    onChange={e => setNewReport({...newReport, difficulties: e.target.value})}
+                  />
+                </div>
+              </div>
+              <input 
+                type="text" 
+                className="w-full p-4 bg-slate-50 border border-slate-200 rounded-xl outline-none text-sm" 
+                placeholder="Enlace a Google Docs (opcional)" 
+                value={newReport.link} 
+                onChange={e => setNewReport({...newReport, link: e.target.value})}
+              />
+            </div>
+            <div className="flex gap-3 pt-4 border-t border-slate-100">
+              <button onClick={handleCloseReportModal} className="flex-1 py-4 font-black text-slate-400 text-xs uppercase tracking-widest">Cancelar</button>
+              <button onClick={handleSaveReport} className="flex-1 py-4 bg-blue-600 text-white font-black text-xs uppercase rounded-2xl shadow-lg hover:bg-blue-700 disabled:opacity-50" disabled={!newReport.month.trim()}>
+                {editingReportId ? 'Actualizar Reporte' : 'Guardar Reporte'}
+              </button>
             </div>
           </div>
         </div>
