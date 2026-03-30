@@ -793,7 +793,12 @@ export default function App() {
     if (!newNoteTitle.trim() || !currentUser) return;
     const notesCollectionRef = collection(db, 'users', currentUser.uid, 'notes');
     const newNote = {
-        title: newNoteTitle.trim(),
+        // Se utiliza la ID generada en el cliente para las tareas,
+        // que es consistente con tu implementación actual de las tareas como una array dentro del documento.
+        // Firestore asignará la ID del documento principal de la nota.
+        title: newNoteTitle.trim(), 
+        // Las IDs de las tareas se generan en el cliente y se mantienen en la array.
+        // Esto es funcional para tu esquema actual.
         details: newNoteDetails.trim(),
         createdAt: serverTimestamp(),
         archived: false,
@@ -822,12 +827,16 @@ export default function App() {
     const updatedTasks = note.tasks.map(t => {
       if (t.id === taskId) {
         const isNowCompleted = !t.completed;
-        return { ...t, completed: isNowCompleted, completedAt: isNowCompleted ? new Date() : null };
+        return { ...t, completed: isNowCompleted, completedAt: isNowCompleted ? serverTimestamp() : null };
       }
       return t;
     });
 
-    await updateDoc(noteDocRef, { tasks: updatedTasks });
+    try {
+      await updateDoc(noteDocRef, { tasks: updatedTasks });
+    } catch (error) {
+      console.error("Error toggling task completion:", error);
+    }
   };
 
   const handleDeleteNoteTask = async (noteId, taskId) => {
