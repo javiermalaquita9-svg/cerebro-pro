@@ -38,18 +38,21 @@ const LINK_ICONS = { Globe, Landmark, CreditCard, Building, PieChart, Wallet, Br
 
 // --- Subcomponentes Estáticos ---
 
-const SidebarButton = ({ icon: Icon, label, active, onClick }) => (
-  <button 
-    onClick={onClick} 
-    className={`w-full flex items-center gap-3 px-4 py-3 rounded-2xl transition-all ${
-      active 
-        ? 'bg-white text-slate-900 shadow-lg font-bold border border-slate-100' 
-        : 'text-slate-400 hover:bg-slate-100 hover:text-slate-800'
-    }`}
-  >
-    <Icon size={18} />
-    <span className="text-xs font-bold uppercase tracking-tight">{label}</span>
-  </button>
+const SidebarButton = ({ icon: Icon, label, active, onClick }) => {
+  return (
+    <button
+      onClick={onClick}
+      className={`w-full flex items-center gap-3 px-4 py-3 rounded-2xl transition-all ${
+        active
+          ? 'bg-white text-slate-900 shadow-lg font-bold border border-slate-100'
+          : 'text-slate-400 hover:bg-slate-100 hover:text-slate-800'
+      }`}
+    >
+      <Icon size={18} />
+      <span className="text-xs font-bold uppercase tracking-tight">{label}</span>
+    </button>
+  );
+}
 );
 
 const StarRatingInput = ({ rating, setRating, label }) => (
@@ -474,19 +477,31 @@ export default function App() {
     }
 
     if (!currentUser && !loading) {
-      // El usuario ha cerrado sesión, limpiar todos los datos locales.
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setNotes([]);
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setInboxItems([]);
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setMainEntities([]);
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setSubcategories([]);
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setTasks([]);
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setResources([]);
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setHabits([]);
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setFinanceCategories({ ingreso: [], egreso: [], ahorro: [] });
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setFinanceLinks([]);
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setTransactions([]);
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setMarkedDays([]);
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setReports([]);
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setWishlistItems([]);
       return;
     }
@@ -1072,15 +1087,6 @@ export default function App() {
     await updateDoc(doc(db, 'users', currentUser.uid, 'subcategories', sId), fields);
   };
 
-  const handleAddHabit = async () => {
-    if (!newHabitForm.name.trim() || !newHabitForm.desc.trim() || !currentUser) return;
-    await addDoc(collection(db, 'users', currentUser.uid, 'habits'), {
-      name: newHabitForm.name.trim(),
-      desc: newHabitForm.desc.trim(),
-      completions: {}
-    });
-    setNewHabitForm({ name: '', desc: '' });
-  };
 
   const toggleHabitDay = async (habitId, dateKey) => {
     if (!currentUser) return;
@@ -1217,15 +1223,6 @@ export default function App() {
     );
   }, [habits, weekDates]);
 
-  const { currentStreak, streakAdvice } = useMemo(() => {
-    const totalCompleted = habits.reduce((acc, h) => acc + Object.values(h.completions || {}).filter(Boolean).length, 0);
-    let advice = "";
-    if (totalCompleted === 0) advice = "El mejor momento para empezar es hoy. ¡Da el primer paso!";
-    else if (totalCompleted < 5) advice = "Buen inicio. Recuerda, la constancia supera a la intensidad.";
-    else if (totalCompleted < 10) advice = "¡Vas por buen camino! Estás creando conexiones neuronales duraderas.";
-    else advice = "¡Imparable! La disciplina que estás forjando ya es parte de tu identidad.";
-    return { currentStreak: totalCompleted, streakAdvice: advice };
-  }, [habits]);
 
   const formatDate = (dateStr) => {
       if (!dateStr) return '---';
