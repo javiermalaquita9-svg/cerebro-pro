@@ -53,7 +53,6 @@ const SidebarButton = ({ icon: Icon, label, active, onClick }) => {
     </button>
   );
 }
-);
 
 const StarRatingInput = ({ rating, setRating, label }) => (
   <div className="space-y-2">
