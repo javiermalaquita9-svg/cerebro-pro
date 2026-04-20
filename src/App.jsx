@@ -108,7 +108,7 @@ const MobileSidebar = ({ isOpen, onClose, activeTab, onTabChange, handleSignOut,
         <SidebarButton icon={Rocket} label="Proyectos" active={activeTab === 'projects'} onClick={() => onTabChange('projects')} />
         <SidebarButton icon={BookOpen} label="Capacitaciones" active={activeTab === 'courses'} onClick={() => onTabChange('courses')} />
         <SidebarButton icon={Wallet} label="Finanzas" active={activeTab === 'finances'} onClick={() => onTabChange('finances')} />
-        <SidebarButton icon={UserCheck} label="Seguimiento de Hábitos" active={activeTab === 'habits'} onClick={() => onTabChange('habits')} />
+        <SidebarButton icon={Calendar} label="Calendario Semanal" active={activeTab === 'habits'} onClick={() => onTabChange('habits')} />
         <SidebarButton icon={Archive} label="Reportes" active={activeTab === 'reports'} onClick={() => onTabChange('reports')} />
       </nav>
 
@@ -940,7 +940,7 @@ export default function App() {
                 await addDoc(collection(db, 'users', currentUser.uid, 'notes'), { title: text, details: '', createdAt: serverTimestamp(), archived: false, tasks: [] });
                 break;
             case 'toHabit':
-                await addDoc(collection(db, 'users', currentUser.uid, 'habits'), { name: text, desc: 'Añadir descripción...', completed: new Array(7).fill(false) });
+                await addDoc(collection(db, 'users', currentUser.uid, 'habits'), { name: text, desc: 'Añadir descripción...', completions: {} });
                 break;
             case 'toArea':
             case 'toProject':
@@ -1074,21 +1074,22 @@ export default function App() {
 
   const handleAddHabit = async () => {
     if (!newHabitForm.name.trim() || !newHabitForm.desc.trim() || !currentUser) return;
-    await addDoc(collection(db, 'users', currentUser.uid, 'habits'), { 
-      name: newHabitForm.name.trim(), 
-      desc: newHabitForm.desc.trim(), 
-      completed: new Array(7).fill(false) 
+    await addDoc(collection(db, 'users', currentUser.uid, 'habits'), {
+      name: newHabitForm.name.trim(),
+      desc: newHabitForm.desc.trim(),
+      completions: {}
     });
     setNewHabitForm({ name: '', desc: '' });
   };
 
-  const toggleHabitDay = async (habitId, dayIndex) => {
+  const toggleHabitDay = async (habitId, dateKey) => {
     if (!currentUser) return;
     const habit = habits.find(h => h.id === habitId);
     if (!habit) return;
-    const newStatus = [...habit.completed];
-    newStatus[dayIndex] = !newStatus[dayIndex];
-    await updateDoc(doc(db, 'users', currentUser.uid, 'habits', habitId), { completed: newStatus });
+    const completions = habit.completions || {};
+    await updateDoc(doc(db, 'users', currentUser.uid, 'habits', habitId), {
+      completions: { ...completions, [dateKey]: !completions[dateKey] }
+    });
   };
 
   const handleDeleteHabit = async (id) => {
@@ -1205,18 +1206,19 @@ export default function App() {
     return [0, 1, 2, 3, 4, 5, 6].map((i) => {
       const d = new Date(start);
       d.setDate(start.getDate() + i);
-      return { label: DAYS_OF_WEEK[i], dayNum: d.getDate(), month: d.toLocaleString('es-ES', { month: 'short' }).replace('.', '') };
+      const dk = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+      return { label: DAYS_OF_WEEK[i], dayNum: d.getDate(), month: d.toLocaleString('es-ES', { month: 'short' }).replace('.', ''), dateKey: dk };
     });
   }, [dateFrom]);
 
   const weeklyStats = useMemo(() => {
-    return [0, 1, 2, 3, 4, 5, 6].map(dayIndex => {
-      return habits.reduce((acc, habit) => acc + (habit.completed[dayIndex] ? 1 : 0), 0);
-    });
-  }, [habits]);
+    return weekDates.map(({ dateKey }) =>
+      habits.reduce((acc, habit) => acc + ((habit.completions || {})[dateKey] ? 1 : 0), 0)
+    );
+  }, [habits, weekDates]);
 
   const { currentStreak, streakAdvice } = useMemo(() => {
-    const totalCompleted = habits.reduce((acc, h) => acc + h.completed.filter(Boolean).length, 0);
+    const totalCompleted = habits.reduce((acc, h) => acc + Object.values(h.completions || {}).filter(Boolean).length, 0);
     let advice = "";
     if (totalCompleted === 0) advice = "El mejor momento para empezar es hoy. ¡Da el primer paso!";
     else if (totalCompleted < 5) advice = "Buen inicio. Recuerda, la constancia supera a la intensidad.";
@@ -1286,15 +1288,11 @@ export default function App() {
           <SidebarButton icon={Rocket} label="Proyectos" active={activeTab === 'projects'} onClick={() => { setActiveTab('projects'); setSelectedParentId(null); }} />
           <SidebarButton icon={BookOpen} label="Capacitaciones" active={activeTab === 'courses'} onClick={() => { setActiveTab('courses'); setSelectedParentId(null); }} />
           <SidebarButton icon={Wallet} label="Finanzas" active={activeTab === 'finances'} onClick={() => { setActiveTab('finances'); setSelectedParentId(null); }} />
-          <SidebarButton icon={UserCheck} label="Seguimiento de Hábitos" active={activeTab === 'habits'} onClick={() => { setActiveTab('habits'); setSelectedParentId(null); }} />
+          <SidebarButton icon={Calendar} label="Calendario Semanal" active={activeTab === 'habits'} onClick={() => { setActiveTab('habits'); setSelectedParentId(null); }} />
           <SidebarButton icon={Archive} label="Reportes" active={activeTab === 'reports'} onClick={() => { setActiveTab('reports'); setSelectedParentId(null); }} />
         </nav>
 
-        <div className="mt-auto px-4 py-5 bg-blue-600 rounded-3xl text-white shadow-xl">
-          <div className="text-[10px] font-bold uppercase opacity-70 mb-1">Efectividad General</div>
-          <div className="text-2xl font-black">72%</div>
-        </div>
-        <div className="border-t border-slate-200 pt-2 mt-2">
+        <div className="mt-auto border-t border-slate-200 pt-2">
           <p className="text-[10px] text-slate-400 font-bold px-4 truncate">{currentUser.email}</p>
           <SidebarButton icon={LogOut} label="Cerrar Sesión" active={false} onClick={handleSignOut} />
         </div>
@@ -1315,7 +1313,7 @@ export default function App() {
               </button>
             )}
             <h2 className="text-lg font-bold">
-              {activeTab === 'habits' ? 'Mis Hábitos' : 
+              {activeTab === 'habits' ? 'Calendario Semanal' :
                activeTab === 'finances' ? 'Control Financiero' :
                activeTab === 'inbox' ? 'Bandeja de Entrada' :
                activeTab === 'notes' ? 'Anotaciones' :
@@ -1640,49 +1638,24 @@ export default function App() {
           {/* VISTA HÁBITOS */}
           {activeTab === 'habits' && (
             <div className="space-y-8 animate-in fade-in duration-500">
-               <div className="grid grid-cols-2 gap-8">
-                    <div className="bg-slate-900 p-6 rounded-3xl text-white shadow-xl flex flex-col justify-center border border-slate-800 space-y-4">
-                        <h4 className="text-[10px] font-black uppercase text-slate-500 tracking-widest">Nuevo Hábito</h4>
-                        <div className="flex flex-col gap-3">
-                            <input 
-                              type="text" 
-                              className="w-full p-3 bg-white/10 border border-white/20 rounded-xl outline-none focus:border-blue-400 font-bold text-sm text-white placeholder:text-slate-400" 
-                              placeholder="Nombre del Hábito (ej: Beber 2L de agua)" 
-                              value={newHabitForm.name} 
-                              onChange={e => setNewHabitForm({...newHabitForm, name: e.target.value})} 
-                            />
-                            <textarea 
-                              className="w-full p-3 bg-white/10 border border-white/20 rounded-xl outline-none focus:border-blue-400 text-xs text-slate-300 resize-none h-20 placeholder:text-slate-400" 
-                              placeholder="Motivación / Descripción..." 
-                              value={newHabitForm.desc} 
-                              onChange={e => setNewHabitForm({...newHabitForm, desc: e.target.value})} 
-                            />
-                            <button 
-                              onClick={handleAddHabit} 
-                              disabled={!newHabitForm.name.trim() || !newHabitForm.desc.trim()}
-                              className="bg-blue-600 text-white px-6 py-3 rounded-xl font-bold text-xs uppercase hover:bg-blue-700 transition-all w-full flex justify-center items-center gap-2 disabled:bg-slate-700 disabled:text-slate-500 disabled:cursor-not-allowed"
-                            >
-                              <Plus size={16}/> CAPTURAR HÁBITO
-                            </button>
-                        </div>
-                    </div>
-                    <div className="bg-orange-50 border border-orange-100 p-6 rounded-3xl flex flex-col justify-center">
-                        <div className="flex justify-between items-start mb-2">
-                            <p className="text-[10px] font-black text-orange-600 uppercase tracking-widest">Tu Progreso Activo</p>
-                            <Flame size={24} className="text-orange-500" fill="currentColor" />
-                        </div>
-                        <p className="text-4xl font-black text-orange-900 mb-2">
-                          {currentStreak} <span className="text-lg font-bold opacity-50">Pts. Constancia</span>
-                        </p>
-                        <p className="text-xs text-orange-700 leading-relaxed font-medium">
-                          {streakAdvice}
-                        </p>
-                    </div>
-                </div>
-
                 <div className="bg-white border border-slate-200 rounded-3xl overflow-hidden shadow-sm">
-                    <div className="p-6 border-b border-slate-100 bg-slate-50/50 flex items-center justify-between">
-                        <h3 className="text-xs font-black text-slate-400 tracking-widest uppercase">Calendario Semanal</h3>
+                    <div className="p-6 border-b border-slate-100 bg-slate-50/50 flex items-center justify-between gap-4">
+                        <h3 className="text-xs font-black text-slate-400 tracking-widest uppercase whitespace-nowrap">Calendario Semanal</h3>
+                        <div className="flex items-center gap-2 flex-1 max-w-xs">
+                          <input
+                            type="text"
+                            placeholder="Nuevo hábito..."
+                            className="flex-1 px-3 py-1.5 bg-white border border-slate-200 rounded-lg text-xs outline-none focus:ring-1 focus:ring-blue-500"
+                            value={newHabitForm.name}
+                            onChange={e => setNewHabitForm({...newHabitForm, name: e.target.value})}
+                            onKeyDown={e => { if (e.key === 'Enter' && newHabitForm.name.trim() && currentUser) { addDoc(collection(db, 'users', currentUser.uid, 'habits'), { name: newHabitForm.name.trim(), desc: '', completions: {} }); setNewHabitForm({ name: '', desc: '' }); } }}
+                          />
+                          <button
+                            onClick={() => { if (!newHabitForm.name.trim() || !currentUser) return; addDoc(collection(db, 'users', currentUser.uid, 'habits'), { name: newHabitForm.name.trim(), desc: '', completions: {} }); setNewHabitForm({ name: '', desc: '' }); }}
+                            disabled={!newHabitForm.name.trim()}
+                            className="p-1.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-40 disabled:cursor-not-allowed transition-all"
+                          ><Plus size={14}/></button>
+                        </div>
                         <input type="date" className="bg-white border rounded-lg px-2 py-1 text-xs outline-none focus:ring-1 focus:ring-blue-500" value={dateFrom} onChange={(e) => setDateFrom(e.target.value)} />
                     </div>
                     <div className="overflow-x-auto">
@@ -1706,11 +1679,14 @@ export default function App() {
                                             <div className="font-bold text-sm text-slate-800">{habit.name}</div>
                                             <div className="text-[10px] text-slate-500 mt-1 italic line-clamp-1">{habit.desc}</div>
                                         </td>
-                                        {habit.completed.map((done, idx) => (
-                                            <td key={idx} className="p-2 text-center">
-                                                <button onClick={() => toggleHabitDay(habit.id, idx)} className={`w-10 h-10 rounded-2xl mx-auto flex items-center justify-center transition-all ${done ? 'bg-blue-600 text-white shadow-lg' : 'bg-slate-100 hover:bg-slate-200'}`}><Check size={18} strokeWidth={3} /></button>
-                                            </td>
-                                        ))}
+                                        {weekDates.map(({ dateKey }, idx) => {
+                                            const done = !!(habit.completions || {})[dateKey];
+                                            return (
+                                              <td key={idx} className="p-2 text-center">
+                                                <button onClick={() => toggleHabitDay(habit.id, dateKey)} className={`w-10 h-10 rounded-2xl mx-auto flex items-center justify-center transition-all ${done ? 'bg-blue-600 text-white shadow-lg' : 'bg-slate-100 hover:bg-slate-200'}`}><Check size={18} strokeWidth={3} /></button>
+                                              </td>
+                                            );
+                                        })}
                                         <td className="p-2 text-center">
                                             <button onClick={() => handleDeleteHabit(habit.id)} className="p-2 text-slate-300 hover:text-red-500 hover:bg-red-50 rounded-lg opacity-0 group-hover:opacity-100 transition-all"><Trash2 size={16} /></button>
                                         </td>
@@ -1720,7 +1696,6 @@ export default function App() {
                         </table>
                     </div>
                 </div>
-                
                 <LineChart data={weeklyStats} weekDates={weekDates} />
             </div>
           )}
