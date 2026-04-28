@@ -38,7 +38,8 @@ const LINK_ICONS = { Globe, Landmark, CreditCard, Building, PieChart, Wallet, Br
 
 // --- Subcomponentes Estáticos ---
 
-const SidebarButton = ({ icon: Icon, label, active, onClick }) => {
+const SidebarButton = ({ icon, label, active, onClick }) => {
+  const Icon = icon;
   return (
     <button
       onClick={onClick}
@@ -110,7 +111,8 @@ const MobileSidebar = ({ isOpen, onClose, activeTab, onTabChange, handleSignOut,
         <SidebarButton icon={Rocket} label="Proyectos" active={activeTab === 'projects'} onClick={() => onTabChange('projects')} />
         <SidebarButton icon={BookOpen} label="Capacitaciones" active={activeTab === 'courses'} onClick={() => onTabChange('courses')} />
         <SidebarButton icon={Wallet} label="Finanzas" active={activeTab === 'finances'} onClick={() => onTabChange('finances')} />
-        <SidebarButton icon={Calendar} label="Calendario Semanal" active={activeTab === 'habits'} onClick={() => onTabChange('habits')} />
+        <SidebarButton icon={Flame} label="Seguimiento de Hábitos" active={activeTab === 'habits'} onClick={() => onTabChange('habits')} />
+        <SidebarButton icon={Calendar} label="Calendario" active={activeTab === 'calendar'} onClick={() => onTabChange('calendar')} />
         <SidebarButton icon={Archive} label="Reportes" active={activeTab === 'reports'} onClick={() => onTabChange('reports')} />
       </nav>
 
@@ -478,29 +480,17 @@ export default function App() {
     if (!currentUser && !loading) {
       // eslint-disable-next-line react-hooks/set-state-in-effect
       setNotes([]);
-      // eslint-disable-next-line react-hooks/set-state-in-effect
       setInboxItems([]);
-      // eslint-disable-next-line react-hooks/set-state-in-effect
       setMainEntities([]);
-      // eslint-disable-next-line react-hooks/set-state-in-effect
       setSubcategories([]);
-      // eslint-disable-next-line react-hooks/set-state-in-effect
       setTasks([]);
-      // eslint-disable-next-line react-hooks/set-state-in-effect
       setResources([]);
-      // eslint-disable-next-line react-hooks/set-state-in-effect
       setHabits([]);
-      // eslint-disable-next-line react-hooks/set-state-in-effect
       setFinanceCategories({ ingreso: [], egreso: [], ahorro: [] });
-      // eslint-disable-next-line react-hooks/set-state-in-effect
       setFinanceLinks([]);
-      // eslint-disable-next-line react-hooks/set-state-in-effect
       setTransactions([]);
-      // eslint-disable-next-line react-hooks/set-state-in-effect
       setMarkedDays([]);
-      // eslint-disable-next-line react-hooks/set-state-in-effect
       setReports([]);
-      // eslint-disable-next-line react-hooks/set-state-in-effect
       setWishlistItems([]);
       return;
     }
@@ -514,6 +504,8 @@ export default function App() {
             return processor ? processor(docData) : docData;
           });
           setter(data);
+      }, (error) => {
+        console.error(`Error conectando con Firestore en la colección [${coll}]:`, error);
         });
         unsubscribes.push(unsubscribe);
       };
@@ -579,6 +571,8 @@ export default function App() {
         } else {
           setMarkedDays([]);
         }
+    }, (error) => {
+      console.error("Error conectando con Firestore en [markedDays]:", error);
       }));
 
       // Categorías Financieras (documento único)
@@ -591,6 +585,8 @@ export default function App() {
           // Si no existe, puedes inicializarlo con valores por defecto
           setFinanceCategories({ ingreso: ['Salario'], egreso: ['Servicios'], ahorro: ['General'] });
         }
+    }, (error) => {
+      console.error("Error conectando con Firestore en [finances/config]:", error);
       }));
 
       return () => {
@@ -1284,7 +1280,8 @@ export default function App() {
           <SidebarButton icon={Rocket} label="Proyectos" active={activeTab === 'projects'} onClick={() => { setActiveTab('projects'); setSelectedParentId(null); }} />
           <SidebarButton icon={BookOpen} label="Capacitaciones" active={activeTab === 'courses'} onClick={() => { setActiveTab('courses'); setSelectedParentId(null); }} />
           <SidebarButton icon={Wallet} label="Finanzas" active={activeTab === 'finances'} onClick={() => { setActiveTab('finances'); setSelectedParentId(null); }} />
-          <SidebarButton icon={Calendar} label="Calendario Semanal" active={activeTab === 'habits'} onClick={() => { setActiveTab('habits'); setSelectedParentId(null); }} />
+          <SidebarButton icon={Flame} label="Seguimiento de Hábitos" active={activeTab === 'habits'} onClick={() => { setActiveTab('habits'); setSelectedParentId(null); }} />
+          <SidebarButton icon={Calendar} label="Calendario" active={activeTab === 'calendar'} onClick={() => { setActiveTab('calendar'); setSelectedParentId(null); }} />
           <SidebarButton icon={Archive} label="Reportes" active={activeTab === 'reports'} onClick={() => { setActiveTab('reports'); setSelectedParentId(null); }} />
         </nav>
 
@@ -1309,7 +1306,8 @@ export default function App() {
               </button>
             )}
             <h2 className="text-lg font-bold">
-              {activeTab === 'habits' ? 'Calendario Semanal' :
+              {activeTab === 'habits' ? 'Seguimiento de Hábitos' :
+               activeTab === 'calendar' ? 'Mi Calendario' :
                activeTab === 'finances' ? 'Control Financiero' :
                activeTab === 'inbox' ? 'Bandeja de Entrada' :
                activeTab === 'notes' ? 'Anotaciones' :
@@ -1320,7 +1318,7 @@ export default function App() {
                'Capacitaciones'}
             </h2>
             
-            {activeTab !== 'habits' && activeTab !== 'finances' && activeTab !== 'notes' && activeTab !== 'inbox' && (
+            {activeTab !== 'habits' && activeTab !== 'finances' && activeTab !== 'notes' && activeTab !== 'inbox' && activeTab !== 'calendar' && (
               <div className="relative group hidden sm:block">
                  <SearchIcon className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
                  <input 
@@ -1379,21 +1377,21 @@ export default function App() {
           
           {/* 1. VISTA GRILLA (Áreas/Cursos/Proyectos) */}
           {!selectedParentId && (activeTab === 'areas' || activeTab === 'courses' || activeTab === 'projects') && (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 animate-in fade-in duration-500">
+            <div className="grid grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-6 animate-in fade-in duration-500">
               {filteredEntities.map((item) => (
                 <div 
                   key={item.id} 
                   onClick={() => setSelectedParentId(item.id)} 
-                  className="relative p-6 bg-white border border-slate-200 rounded-3xl hover:shadow-2xl transition-all cursor-pointer group"
+                  className="relative p-4 sm:p-6 bg-white border border-slate-200 rounded-2xl sm:rounded-3xl hover:shadow-2xl transition-all cursor-pointer group flex flex-col"
                 >
                   <div className="absolute top-4 right-4 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                       <button onClick={(e) => { e.stopPropagation(); handleEditEntityInit(item); }} className="p-2 bg-slate-50 hover:bg-blue-50 text-slate-400 hover:text-blue-500 rounded-lg transition-colors"><Edit2 size={14} /></button>
                       <button onClick={(e) => { e.stopPropagation(); setEntityToDelete(item); }} className="p-2 bg-slate-50 hover:bg-red-50 text-slate-400 hover:text-red-500 rounded-lg transition-colors"><Trash2 size={14} /></button>
                   </div>
-                  <div className={`w-12 h-12 rounded-2xl flex items-center justify-center mb-6 ${item.bg} ${item.color}`}>
-                    <AreaIcon name={item.icon} size={24} />
+                  <div className={`w-10 h-10 sm:w-12 sm:h-12 rounded-xl sm:rounded-2xl flex items-center justify-center mb-3 sm:mb-6 ${item.bg} ${item.color}`}>
+                    <AreaIcon name={item.icon} className="w-5 h-5 sm:w-6 sm:h-6" />
                   </div>
-                  <h3 className="font-bold text-slate-800 mb-2">{item.title}</h3>
+                  <h3 className="text-sm sm:text-base font-bold text-slate-800 mb-2 truncate">{item.title}</h3>
                   <div className="flex justify-between text-[10px] font-bold text-slate-400 uppercase mb-1.5">
                       <span>Progreso</span>
                       <span>{getParentProgress(item.id)}%</span>
@@ -1636,7 +1634,7 @@ export default function App() {
             <div className="space-y-8 animate-in fade-in duration-500">
                 <div className="bg-white border border-slate-200 rounded-3xl overflow-hidden shadow-sm">
                     <div className="p-6 border-b border-slate-100 bg-slate-50/50 flex items-center justify-between gap-4">
-                        <h3 className="text-xs font-black text-slate-400 tracking-widest uppercase whitespace-nowrap">Calendario Semanal</h3>
+                        <h3 className="text-xs font-black text-slate-400 tracking-widest uppercase whitespace-nowrap">Seguimiento de Hábitos</h3>
                         <div className="flex items-center gap-2 flex-1 max-w-xs">
                           <input
                             type="text"
@@ -1693,6 +1691,36 @@ export default function App() {
                     </div>
                 </div>
                 <LineChart data={weeklyStats} weekDates={weekDates} />
+            </div>
+          )}
+
+          {/* VISTA CALENDARIO */}
+          {activeTab === 'calendar' && (
+            <div className="h-[calc(100vh-12rem)] min-h-[500px] animate-in fade-in duration-500">
+                <div className="bg-white border border-slate-200 rounded-3xl overflow-hidden shadow-sm h-full flex flex-col">
+                    <div className="p-4 border-b border-slate-100 bg-slate-50 flex items-center justify-between">
+                        <h3 className="text-xs font-black text-slate-400 tracking-widest uppercase flex items-center gap-2">
+                            <Calendar size={16} /> Google Calendar
+                        </h3>
+                    </div>
+                    <div className="flex-1 w-full bg-slate-50/50 p-2 sm:p-4">
+                        {/* 
+                          Para integrar tu calendario de Google:
+                          1. Ve a Google Calendar en PC > Configuración
+                          2. Selecciona tu calendario > Integrar el calendario
+                          3. Copia el enlace de "URL pública de este calendario"
+                          4. Pégalo en el atributo 'src' de abajo
+                        */}
+                        <iframe 
+                            src="https://calendar.google.com/calendar/embed?src=es.419%23holiday%40group.v.calendar.google.com&ctz=America/Mexico_City" 
+                            style={{ border: 0 }} 
+                            width="100%" 
+                            height="100%" 
+                            frameBorder="0" 
+                            scrolling="no"
+                        ></iframe>
+                    </div>
+                </div>
             </div>
           )}
 
@@ -2069,27 +2097,27 @@ export default function App() {
                       </div>
                    </div>
 
-                   <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                      <div className="bg-emerald-50 border border-emerald-100 p-6 rounded-3xl flex flex-col justify-center">
-                         <div className="flex justify-between items-start mb-4">
-                            <p className="text-[10px] font-black text-emerald-600 uppercase tracking-widest">Ingresos</p>
-                            <div className="w-8 h-8 bg-emerald-200/50 text-emerald-600 rounded-full flex items-center justify-center"><ArrowUpRight size={16}/></div>
+                   <div className="grid grid-cols-2 md:grid-cols-3 gap-4 sm:gap-6">
+                      <div className="col-span-1 bg-emerald-50 border border-emerald-100 p-4 sm:p-6 rounded-3xl flex flex-col justify-center">
+                         <div className="flex justify-between items-start mb-2 sm:mb-4">
+                            <p className="text-[9px] sm:text-[10px] font-black text-emerald-600 uppercase tracking-widest">Ingresos</p>
+                            <div className="w-6 h-6 sm:w-8 sm:h-8 bg-emerald-200/50 text-emerald-600 rounded-full flex items-center justify-center"><ArrowUpRight size={16}/></div>
                          </div>
-                         <p className="text-3xl font-black text-emerald-900">${financeStats.ingresos.toLocaleString()}</p>
+                         <p className="text-base sm:text-3xl font-black text-emerald-900">${financeStats.ingresos.toLocaleString()}</p>
                       </div>
-                      <div className="bg-red-50 border border-red-100 p-6 rounded-3xl flex flex-col justify-center">
-                         <div className="flex justify-between items-start mb-4">
-                            <p className="text-[10px] font-black text-red-600 uppercase tracking-widest">Egresos</p>
-                            <div className="w-8 h-8 bg-red-200/50 text-red-600 rounded-full flex items-center justify-center"><ArrowDownRight size={16}/></div>
+                      <div className="col-span-1 bg-red-50 border border-red-100 p-4 sm:p-6 rounded-3xl flex flex-col justify-center">
+                         <div className="flex justify-between items-start mb-2 sm:mb-4">
+                            <p className="text-[9px] sm:text-[10px] font-black text-red-600 uppercase tracking-widest">Egresos</p>
+                            <div className="w-6 h-6 sm:w-8 sm:h-8 bg-red-200/50 text-red-600 rounded-full flex items-center justify-center"><ArrowDownRight size={16}/></div>
                          </div>
-                         <p className="text-3xl font-black text-red-900">${financeStats.egresos.toLocaleString()}</p>
+                         <p className="text-base sm:text-3xl font-black text-red-900">${financeStats.egresos.toLocaleString()}</p>
                       </div>
-                      <div className="bg-slate-900 p-6 rounded-3xl text-white shadow-xl flex flex-col justify-center">
-                         <div className="flex justify-between items-start mb-4">
-                            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Balance Disponible</p>
-                            <div className="w-8 h-8 bg-white/10 text-white rounded-full flex items-center justify-center"><PiggyBank size={16}/></div>
+                      <div className="col-span-2 md:col-span-1 bg-slate-900 p-4 sm:p-6 rounded-3xl text-white shadow-xl flex flex-col justify-center">
+                         <div className="flex justify-between items-start mb-2 sm:mb-4">
+                            <p className="text-[9px] sm:text-[10px] font-black text-slate-400 uppercase tracking-widest">Balance Disponible</p>
+                            <div className="w-6 h-6 sm:w-8 sm:h-8 bg-white/10 text-white rounded-full flex items-center justify-center"><PiggyBank size={16}/></div>
                          </div>
-                         <p className="text-3xl font-black text-white">${financeStats.balance.toLocaleString()}</p>
+                         <p className="text-2xl sm:text-3xl font-black text-white">${financeStats.balance.toLocaleString()}</p>
                       </div>
                    </div>
 
